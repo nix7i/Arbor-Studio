@@ -1,0 +1,14 @@
+{
+  "name": "arbor-studio",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder" },
+  "dependencies": { "electron-updater": "^6.3.0" },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.0.0" },
+  "build": {
+    "appId": "com.yourname.arborstudio",
+    "productName": "Arbor Studio",
+    "win": { "target": "nsis", "icon": "build/icon.ico" },
+    "publish": [{ "provider": "github", "owner": "YOUR_GITHUB_NAME", "repo": "arbor-studio", "releaseType": "release" }]
+  }
+}

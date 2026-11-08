@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upgrade Tree Designer</title>
+<style>
+  /* =====================================================================
+     DESIGN SYSTEM — "Pro Dark" workspace
+       Tokens ......... colours, radii, type scale (single accent: blue)
+       1. Reset
+       2. Utilities ... tiny single-purpose helpers (also used by the JS templates)
+       3. App shell ... top bar · left rail · canvas stage · right inspector
+       4. Canvas ...... grid, edges, nodes and their simulation states
+       5. Controls .... buttons, inputs, tabs, cards, toasts, overlays
+     ===================================================================== */
+
+  :root {
+    /* surfaces: true black canvas, neutral grays (no colour tint) */
+    --bg-canvas: #000000;
+    --bg-app:    #000000;
+    --bg-panel:  #0a0a0a;
+    --bg-raised: #141414;
+    --bg-hover:  #1c1c1c;
+    --bg-input:  #000000;
+    /* lines */
+    --line:        #212121;
+    --line-strong: #343434;
+    /* text */
+    --tx-1: #fafafa;   /* titles, values */
+    --tx-2: #c4c4c4;   /* body */
+    --tx-3: #8a8a8a;   /* meta, labels */
+    --tx-4: #5c5c5c;   /* disabled / hints */
+    /* the one accent: white on black, for primary actions and focus */
+  --accent:       #f5f5f5;
+  --accent-hover: #ffffff;
+  --accent-press: #cfcfcf;
+  --accent-soft:  rgba(255,255,255,.08);
+  --accent-ring:  #f5f5f5;
+    /* status */
+    --ok: #3fb950; --warn: #d29922; --bad: #f85149;
+    /* shape + type */
+    --r-sm: 4px; --r-md: 6px; --r-lg: 8px;
+    --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    --t: 90ms ease;
+  }
+
+  /* ---- 1. Reset ---- */
+  *, *::before, *::after { box-sizing: border-box; border: 0 solid; }
+  html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  h2, p { margin: 0; }
+  h2 { font-size: inherit; font-weight: inherit; }
+  button, input, select, textarea { font: inherit; color: inherit; margin: 0; }
+  button { background: transparent; cursor: pointer; }
+  kbd, code { font-family: var(--mono); font-size: .88em; }
+  code { color: var(--tx-1); background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 0 4px; }
+  kbd { color: var(--tx-1); background: var(--bg-raised); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: var(--r-sm); padding: 0 5px; }
+  html, body { height: 100%; }
+  body { font-family: var(--font); font-size: 13px; background: var(--bg-app); color: var(--tx-2); -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
+  ::selection { background: var(--accent-soft); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 10px; border: 3px solid var(--bg-panel); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--tx-4); }
+
+  /* ---- 2. Utilities (each class does exactly one thing; the JS templates rely on these names) ---- */
+  .flex { display: flex; }          .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }   .flex-1 { flex: 1 1 0%; }        .shrink-0 { flex-shrink: 0; }
+  .items-center { align-items: center; } .items-start { align-items: flex-start; } .block { display: block; }
+  .justify-between { justify-content: space-between; }
+  .justify-end { justify-content: flex-end; }
+  .relative { position: relative; } .absolute { position: absolute; } .fixed { position: fixed; }
+  .overflow-hidden { overflow: hidden; } .overflow-y-auto { overflow-y: auto; }
+  .min-h-0 { min-height: 0; }
+  .pointer-events-none { pointer-events: none; }
+  .cursor-pointer { cursor: pointer; } .select-none { user-select: none; -webkit-user-select: none; }
+  .h-screen { height: 100vh; } .w-screen { width: 100vw; }
+  .w-px { width: 1px; } .h-6 { height: 1.5rem; } .w-16 { width: 4rem; } .w-full { width: 100%; }
+  .max-w-hud { max-width: 320px; } .max-w-2xl { max-width: 42rem; }
+  .gap-1 { gap: .25rem; } .gap-2 { gap: .5rem; } .gap-3 { gap: .75rem; }
+  .gap-x-3 { column-gap: .75rem; } .gap-y-1 { row-gap: .25rem; }
+  .p-1 { padding: .25rem; } .p-3 { padding: .75rem; } .p-4 { padding: 1rem; }
+  .px-2 { padding-left: .5rem; padding-right: .5rem; } .px-3 { padding-left: .75rem; padding-right: .75rem; }
+  .py-1 { padding-top: .25rem; padding-bottom: .25rem; } .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+  .mr-2 { margin-right: .5rem; } .mx-1 { margin-left: .25rem; margin-right: .25rem; }
+  .mt-1 { margin-top: .25rem; } .mt-2 { margin-top: .5rem; } .mt-3 { margin-top: .75rem; } .mt-4 { margin-top: 1rem; }
+  .mb-1 { margin-bottom: .25rem; } .mb-2 { margin-bottom: .5rem; }
+  .space-y-3 > * + * { margin-top: .75rem; }
+  .top-3 { top: .75rem; } .left-3 { left: .75rem; } .right-3 { right: .75rem; }
+  .bottom-3 { bottom: .75rem; } .bottom-16 { bottom: 4rem; }
+  .left-half { left: 50%; } .-translate-x-half { transform: translateX(-50%); } .z-toast { z-index: 60; }
+  .text-xs { font-size: 11.5px; line-height: 1rem; } .text-sm { font-size: 13px; line-height: 1.25rem; }
+  .text-lg { font-size: 15px; line-height: 1.5rem; }
+  .font-bold { font-weight: 700; } .font-semibold { font-weight: 600; }
+  .font-mono { font-family: var(--mono); }
+  .text-right { text-align: right; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .border { border: 1px solid; } .border-b { border-bottom: 1px solid; } .border-l { border-left: 1px solid; }
+  .rounded-xl { border-radius: var(--r-lg); }
+  .bg-slate-950 { background-color: var(--bg-app); } .bg-slate-900 { background-color: var(--bg-panel); } .bg-slate-700 { background-color: var(--line-strong); }
+  .text-slate-100 { color: var(--tx-1); } .text-slate-200 { color: var(--tx-1); } .text-slate-300 { color: var(--tx-2); } .text-slate-400 { color: var(--tx-3); }
+  .text-green-400 { color: var(--ok); } .text-red-400 { color: var(--bad); }
+  .border-slate-800 { border-color: var(--line); } .border-slate-700 { border-color: var(--line-strong); }
+
+  /* ---- 3. App shell ---- */
+  .app { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
+
+  /* top bar */
+  .topbar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 16px;
+            background: var(--bg-panel); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-logo { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; display: block; }
+  .brand-name { font-size: 13.5px; font-weight: 600; color: var(--tx-1); letter-spacing: -.005em; white-space: nowrap; }
+
+  /* shell = rail | stage | inspector */
+  .shell { display: flex; flex: 1 1 0%; min-height: 0; }
+
+  /* left rail: tools and secondary actions */
+  .rail { width: 196px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 10px;
+          background: var(--bg-panel); border-right: 1px solid var(--line); overflow-y: auto; }
+  .rail-label { margin: 14px 4px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-4); }
+  .rail-label:first-child { margin-top: 2px; }
+  .rail .btn { width: 100%; justify-content: flex-start; }
+  .rail-pair { display: flex; gap: 6px; }
+  .rail-pair .btn { justify-content: center; }
+  .rail-check { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 6px 8px; font-size: 12.5px; color: var(--tx-2);
+                border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg-app); cursor: pointer; user-select: none; transition: border-color var(--t); }
+  .rail-check:hover { border-color: var(--line-strong); }
+  .rail-check input { accent-color: var(--accent-ring); width: 14px; height: 14px; }
+  .rail-grow { flex: 1 1 0%; min-height: 12px; }
+
+  /* right inspector */
+  .inspector { width: 360px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
+               background: var(--bg-panel); border-left: 1px solid var(--line); }
+  .tabs { scrollbar-width: none; display: flex; flex-shrink: 0; padding: 0 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .panel-body { flex: 1 1 0%; overflow-y: auto; padding: 14px; }
+
+  /* ---- 4. Canvas ---- */
+  #viewport {
+    background-color: var(--bg-canvas);
+    background-image:
+      linear-gradient(to right,  rgba(255,255,255,var(--minor-a,.035)) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,var(--minor-a,.035)) 1px, transparent 1px),
+      linear-gradient(to right,  rgba(255,255,255,.075) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.075) 1px, transparent 1px);
+    touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  }
+  #viewport.panning { cursor: grabbing; }
+  #viewport.tool-connect { cursor: crosshair; }
+  #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+
+  .edge { fill: none; stroke-width: 2; stroke-linecap: round; }
+  .edge-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+  #rubber { fill: none; stroke: var(--accent-ring); stroke-width: 2; stroke-dasharray: 6 6; pointer-events: none; }
+  .edge.neon { stroke-width: 2.5; filter: drop-shadow(0 0 3px rgba(125,211,252,.85)) drop-shadow(0 0 8px rgba(125,211,252,.45)); }
+  .edge.flow { stroke-dasharray: 8 8; animation: edgeflow .7s linear infinite; }
+  @keyframes edgeflow { to { stroke-dashoffset: -16; } }
+
+  /* nodes: --c is the type colour; border style also differs per type so types read without colour */
+  .node {
+    --c: #38bdf8;
+    position: absolute; left: 0; top: 0; width: 200px; height: 128px; box-sizing: border-box;
+    padding: 8px 10px; border-radius: var(--r-lg); background: var(--bg-raised); color: var(--tx-2);
+    border: 2px solid var(--c); cursor: grab; overflow: hidden;
+    display: flex; flex-direction: column; gap: 3px;
+    transition: filter .15s, opacity .15s, box-shadow .15s, background .15s;
+    will-change: transform;
+  }
+  .viewport-sim .node { cursor: pointer; }
+  .tool-connect .node { cursor: crosshair; }
+  .type-normal     { --c: #38bdf8; }
+  .type-repeatable { --c: #34d399; border-style: dashed; }
+  .type-unlock     { --c: #a78bfa; border-style: double; border-width: 4px; padding: 6px 8px; }
+  .type-milestone  { --c: #fbbf24; border-width: 3px; padding: 7px 9px; background: linear-gradient(160deg, #2a2108 0%, var(--bg-raised) 70%); box-shadow: 0 0 16px -4px rgba(251,191,36,.45); }
+  .type-board      { --c: #fb923c; border-style: dotted; border-width: 3px; padding: 7px 9px; }
+  .type-rebirth    { --c: #f87171; border-width: 3px; padding: 7px 9px; background: linear-gradient(160deg, #2e1014 0%, var(--bg-raised) 70%); box-shadow: 0 0 16px -4px rgba(248,113,113,.5); }
+  .node.selected { outline: 2px solid var(--tx-1); outline-offset: 3px; }
+  .node.connect-src { outline: 2px dashed var(--accent-ring); outline-offset: 3px; }
+  .multi-sel { outline: 2px dashed var(--accent-ring); outline-offset: 3px; }
+  .sr-dim { opacity: .18; }
+  .sr-hit { box-shadow: 0 0 0 3px var(--accent-ring), 0 0 20px 2px rgba(232,237,243,.35) !important; }
+
+  /* simulation states */
+  .st-locked { filter: grayscale(1) brightness(.55); opacity: .8; }
+  .st-available.can-buy { box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 16px -2px var(--c); }
+  .st-owned, .st-maxed { background: #0e2018; }
+  .type-milestone.st-owned, .type-milestone.st-maxed { background: linear-gradient(160deg,#3a2d08,#0e2018 70%); }
+  .st-board { background: #1d1810; }
+
+  .n-head { display: flex; align-items: center; gap: 6px; }
+  .n-icon { color: var(--c); font-size: 13px; }
+  .n-title { font-weight: 600; font-size: 13.5px; color: var(--tx-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .n-badge { font-size: 10px; font-weight: 600; letter-spacing: .03em; padding: 1px 6px; border-radius: var(--r-sm); background: var(--bg-hover); color: var(--tx-2); white-space: nowrap; }
+  .st-owned .n-badge, .st-maxed .n-badge { background: #123d22; color: #8fe6a8; }
+  .n-id { font-size: 10px; color: var(--tx-3); font-family: var(--mono); }
+  .n-desc { font-size: 11.5px; color: var(--tx-2); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 29px; }
+  .n-costs { display: flex; gap: 4px; overflow: hidden; margin-top: auto; }
+  .n-fx { font-size: 11px; color: var(--c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 14px; }
+  .chip { display: inline-flex; padding: 1px 6px; border-radius: var(--r-sm); font-size: 11px; background: var(--bg-input); border: 1px solid var(--line-strong); color: var(--tx-2); white-space: nowrap; }
+  .chip.ok  { border-color: #1f7a38; color: #7fdc9a; }
+  .chip.bad { border-color: #8e2a2a; color: #f09a98; }
+  .chip.dim { color: var(--tx-3); }
+  .bd-bar { position: relative; height: 17px; margin-top: auto; border-radius: var(--r-sm); background: var(--bg-input); border: 1px solid var(--line-strong); overflow: hidden; }
+  .bd-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #c2410c, var(--c)); }
+  .bd-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px #000; }
+
+  /* floating canvas overlays (search, hint, HUD, zoom) */
+  .glass { background: rgba(10,10,10,.95); border: 1px solid var(--line-strong); border-radius: var(--r-lg); }
+  #hint { font-size: 12px; color: var(--tx-1); }
+  #status { font-variant-numeric: tabular-nums; }
+  #hud .glass { box-shadow: none; }
+  #simBox b.text-sm, #devBox b.text-sm { color: var(--tx-1); font-weight: 600; }
+  #devBreak { font-family: var(--mono); color: var(--tx-2); background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; }
+
+  /* play mode: editing controls are inert while a Play session is running */
+  .playing #btnAdd, .playing #btnConnect, .playing #btnUndo, .playing #btnRedo, .playing #btnImport, .playing #btnClear, .playing #chkSnap,
+  .playing #tab-inspector, .playing #tab-currencies, .playing #tab-settings, .playing #tab-vars, .playing #tab-vfx { pointer-events: none; opacity: .4; }
+
+  .ac { position: fixed; z-index: 80; background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 4px; font: 12px var(--mono); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+  .ac div { padding: 3px 9px; cursor: pointer; border-radius: var(--r-sm); }
+  .ac div.on, .ac div:hover { background: var(--bg-hover); color: var(--tx-1); }
+
+  /* ---- 5. Controls ---- */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; line-height: 1.4;
+         background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--tx-1); cursor: pointer; white-space: nowrap;
+         transition: background var(--t), border-color var(--t), color var(--t), transform var(--t); }
+  .btn:hover { background: var(--bg-hover); border-color: var(--tx-4); }
+  .btn:active { background: var(--bg-input); transform: translateY(1px); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.primary:active { background: var(--accent-press); border-color: var(--accent-press); }
+  .btn.danger { background: transparent; border-color: #5a2326; color: #f09a98; }
+  .btn.danger:hover { background: #2a1214; border-color: var(--bad); color: #ffb3b0; }
+  .btn.danger:active { background: #1f0d0f; }
+  .btn.active { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--tx-1); }
+  .btn.sim-on { background: var(--accent-soft); border-color: var(--accent-ring); color: var(--tx-1); }
+  .btn.small { padding: 2px 8px; font-size: 12px; }
+  .icon-btn { background: transparent; border: none; color: var(--tx-3); cursor: pointer; padding: 2px 6px; border-radius: var(--r-sm); font-size: 14px; transition: background var(--t), color var(--t); }
+  .icon-btn:hover { background: var(--bg-hover); color: var(--tx-1); }
+  .icon-btn:active { background: var(--bg-input); }
+
+  .inp { width: 100%; background: var(--bg-input); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 5px 8px; font-size: 12.5px; color: var(--tx-1); transition: border-color var(--t), box-shadow var(--t); }
+  .inp::placeholder { color: var(--tx-4); }
+  .inp:hover { border-color: var(--tx-4); }
+  .inp:focus { outline: none; border-color: var(--accent-ring); box-shadow: 0 0 0 3px rgba(232,237,243,.12); }
+  select.inp { padding: 5px 4px; }
+  textarea.inp { resize: vertical; }
+  input[type="checkbox"], input[type="color"] { accent-color: var(--accent-ring); }
+  input[type="color"].inp { padding: 1px; cursor: pointer; }
+
+  .lbl { display: block; margin: 14px 0 5px; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--tx-3); }
+  .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .hint { font-size: 12px; color: var(--tx-3); line-height: 1.5; }
+  .hint code { color: var(--tx-2); }
+  .hint b, .hint i { color: var(--tx-1); }
+  .warn { font-size: 11.5px; color: var(--warn); margin: 2px 0 6px; }
+
+  .tab { flex: 1 0 auto; padding: 11px 9px 9px; font-size: 12px; font-weight: 500; color: var(--tx-3); border-bottom: 2px solid transparent; background: none; cursor: pointer; white-space: nowrap; transition: color var(--t), border-color var(--t); }
+  .tab:hover { color: var(--tx-1); }
+  .tab.active { color: var(--tx-1); border-bottom-color: var(--accent-ring); }
+
+  .pchip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 8px; margin: 0 4px 4px 0; border-radius: var(--r-sm); background: var(--bg-raised); border: 1px solid var(--line-strong); font-size: 12px; color: var(--tx-1); }
+  .pchip .nm { cursor: pointer; } .pchip .nm:hover { text-decoration: underline; text-decoration-color: var(--accent-ring); }
+  .card { background: var(--bg-app); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px; margin-bottom: 8px; }
+  .vfx-grp { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px; margin-bottom: 8px; background: var(--bg-app); }
+  .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; padding: 16px; }
+  .modal-card { background: var(--bg-panel); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 24px 60px rgba(0,0,0,.55); }
+  .toast { padding: 8px 14px; border-radius: var(--r-md); font-size: 12.5px; background: var(--bg-raised); border: 1px solid var(--line-strong); color: var(--tx-1); transition: opacity .3s; max-width: 80vw; }
+  .toast.error { background: #2a1214; border-color: #8e2a2a; }
+  .toast.ok { background: #0f2418; border-color: #1f7a38; }
+  .toast.out { opacity: 0; }
+  .swatch { width: 22px; height: 14px; border-radius: var(--r-sm); background: var(--bg-raised); border: 2px solid var(--c); display: inline-block; vertical-align: middle; }
+  .legend { font-size: 11.5px; color: var(--tx-2); }
+
+  @media (max-width: 900px) { .rail { width: 160px; } .inspector { width: 300px; } }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<!-- ======================= TOP BAR ======================= -->
+<header class="topbar" data-ui>
+  <div class="brand">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Arbor Studio">
+    <span class="brand-name">Arbor Studio</span>
+  </div>
+  <div class="flex-1"></div>
+  <button class="btn" id="btnImport">⭳ Import Tree Data</button>
+  <button class="btn primary" id="btnExport">⭱ Export Tree Data</button>
+  <button class="btn" id="btnPanel" title="Show/hide side panel">☰</button>
+</header>
+
+<div class="shell">
+
+  <!-- ======================= LEFT RAIL (tools &amp; secondary actions) ======================= -->
+  <nav class="rail" data-ui>
+    <div class="rail-label">Build</div>
+    <button class="btn primary" id="btnAdd" title="Add node (N)">＋ Add Node</button>
+    <button class="btn" id="btnConnect" title="Click a parent, then a child (C)">🔗 Connect</button>
+    <label class="rail-check"><input type="checkbox" id="chkSnap" checked> Snap to grid</label>
+
+    <div class="rail-label">History &amp; view</div>
+    <div class="rail-pair">
+      <button class="btn flex-1" id="btnUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+      <button class="btn flex-1" id="btnRedo" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>
+    </div>
+    <button class="btn" id="btnFit" title="Fit all nodes in view (F)">⤢ Fit to view</button>
+
+    <div class="rail-label">Simulate</div>
+    <button class="btn" id="btnSim" title="Live-test buying upgrades (see Settings → Play mode)">▶ Test</button>
+
+    <div class="rail-grow"></div>
+    <div class="rail-label">Project</div>
+    <button class="btn danger" id="btnClear" title="Remove everything (undoable)">Clear all</button>
+  </nav>
+
+  <!-- ======================= WORKSPACE ======================= -->
+  <main id="viewport" class="relative flex-1 overflow-hidden">
+    <div id="world">
+      <!-- Edges live in an SVG with overflow visible, so it can draw anywhere in world space -->
+      <svg id="edges" style="position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none">
+        <defs>
+          <marker id="arr-norm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker>
+          <marker id="arr-dim"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3b4658"/></marker>
+          <marker id="arr-on"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7dd3fc"/></marker>
+          <marker id="arr-hi"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e2e8f0"/></marker>
+          <marker id="arr-sel"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#f472b6"/></marker>
+        </defs>
+        <g id="edgeG"></g>
+        <path id="rubber" d=""></path>
+      </svg>
+      <div id="nodes"></div>
+    </div>
+
+    <!-- Hint banner (top centre) -->
+    <div class="glass absolute top-3 left-3 flex items-center gap-2 px-2 py-1" data-ui><input id="search" class="inp" style="width:230px" placeholder="🔍 Search ID, name, effect, #tag…"><span id="searchCount" class="hint"></span><span id="multiCount" class="hint" style="color:var(--accent-hover)"></span></div>
+    <div id="hint" class="glass absolute top-3 left-half -translate-x-half px-3 py-1 text-xs text-slate-300 pointer-events-none" style="display:none"></div>
+
+    <!-- HUD (bottom-left): simulation panel + legend -->
+    <div id="hud" class="absolute left-3 bottom-3 flex flex-col gap-2 max-w-hud" data-ui>
+      <div id="devBox" class="glass p-3" style="display:none"></div>
+      <div id="simBox" class="glass p-3" style="display:none"></div>
+      <div class="glass legend px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
+        <span><span class="swatch" style="--c:#38bdf8"></span> Normal</span>
+        <span><span class="swatch" style="--c:#34d399;border-style:dashed"></span> Repeatable</span>
+        <span><span class="swatch" style="--c:#a78bfa;border-style:double;border-width:4px"></span> Unlock</span>
+        <span><span class="swatch" style="--c:#fbbf24;box-shadow:0 0 8px #fbbf24"></span> Milestone</span>
+        <span><span class="swatch" style="--c:#fb923c;border-style:dotted;border-width:3px"></span> Board</span>
+        <span><span class="swatch" style="--c:#f87171;box-shadow:0 0 8px #f87171"></span> Rebirth</span>
+      </div>
+    </div>
+
+    <!-- Zoom controls (bottom-right) -->
+    <div class="glass absolute right-3 bottom-3 flex items-center gap-1 p-1" data-ui>
+      <span id="status" class="text-xs text-slate-400 px-2"></span>
+      <button class="btn small" id="zOut">−</button>
+      <button class="btn small" id="zReset" title="Reset zoom to 100%">100%</button>
+      <button class="btn small" id="zIn">＋</button>
+    </div>
+  </main>
+
+  <!-- ======================= SIDE PANEL ======================= -->
+  <aside id="sidebar" class="inspector" data-ui>
+    <div class="tabs">
+      <button class="tab active" data-tab="inspector">Node</button>
+      <button class="tab" data-tab="currencies">Currencies</button>
+      <button class="tab" data-tab="vars">Variables</button>
+      <button class="tab" data-tab="vfx">VFX</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="help">Help</button>
+    </div>
+    <div class="panel-body">
+      <div id="tab-inspector"></div>
+      <div id="tab-currencies" style="display:none"></div>
+      <div id="tab-vars" style="display:none"></div>
+      <div id="tab-vfx" style="display:none"></div>
+      <div id="tab-settings" style="display:none"></div>
+      <div id="tab-help" style="display:none" class="hint space-y-3">
+        <div>
+          <b class="text-slate-200">Navigation</b><br>
+          Drag the background to pan. Mouse wheel zooms at the cursor. Drag nodes to move them (hold <kbd>Alt</kbd> to bypass snapping).
+        </div>
+        <div>
+          <b class="text-slate-200">Connecting</b><br>
+          Press <kbd>C</kbd> (or the Connect button), click the <i>parent</i>, then the <i>child</i>. Clicking an existing link removes it. You can also pick parents in the Node tab. Click a line to select it, <kbd>Delete</kbd> removes it. Cycles are rejected automatically.
+        </div>
+        <div>
+          <b class="text-slate-200">Shortcuts</b><br>
+          <kbd>N</kbd> new node · <kbd>C</kbd> connect · <kbd>F</kbd> fit · <kbd>Del</kbd> delete selection · <kbd>Esc</kbd> cancel · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Shift+Z</kbd> undo/redo.
+        </div>
+        <div>
+          <b class="text-slate-200">Effect syntax (used by the simulator)</b><br>
+          Modifier <code>x3</code> multiplies a currency's production; <code>+1/s</code> adds per second. Put the currency in "Target" (or write it in the modifier, e.g. <code>x3 Points</code>). Repeatable nodes apply their effect once per level. Anything else is kept as plain text for your own game.
+        </div>
+        <div>
+          <b class="text-slate-200">Tools</b><br>
+          <b>Search</b> (top-left) highlights nodes matching every word in the ID, name, description, type, <code>#tag</code>, effects or cost currency. <b>Colour &amp; tag</b> are set per node in the Inspector. <b>Variables</b> tab: global constants for formulas. Formula boxes autocomplete (↑↓, Tab/Enter). <b>Dev panel</b> (Test mode): grant/set currencies, infinite resources, and a breakdown such as <code>×3 U1 …</code> = total per second for the chosen currency. <b>Buy max</b>: Shift-click a repeatable, or choose it in Settings. <b>Multi-select</b> (editing): Shift-drag a box on the canvas, Shift-click nodes to add/remove, Ctrl+A for all; drag any selected node to move the group, Del deletes them, Ctrl+C / Ctrl+V copy and paste (links between copied nodes are kept; IDs written inside formulas or selectors are not rewritten).
+        </div>
+        <div>
+          <b class="text-slate-200">Achievements, challenges &amp; maths</b><br>
+          <b>Achievement</b>: free; unlocks by itself once its parents are owned and its condition is true (<code>points &gt;= 1e6</code>, <code>b1 &gt;= 10 &amp;&amp; r1 &gt; 0</code>). Stays owned through resets. <b>Challenge</b>: click to enter (optionally resetting upgrades by ID); while active its <i>Penalty</i> rows apply (<code>^0.5</code> = production to a power, <code>x0.1</code>, <code>+-5/s</code>); when the goal is met it completes permanently and its Effects become the reward. Click again to abandon. New formula tools: comparisons, <code>if(cond, a, b)</code> and <code>softcap(x, start, power)</code> (past <code>start</code>, growth is raised to <code>power</code>), e.g. effect <code>x softcap(1+sqrt(honey), 1e6, 0.5)</code>. Node icons accept an emoji or an image URL. <b>Updates per second</b> is in Settings; the Dev panel can export/import a save string.
+        </div>
+        <div>
+          <b class="text-slate-200">Blocking &amp; disabling</b><br>
+          <b>Block buying:</b> while a node is owned, nodes matching its IDs can't be bought (they show as locked); add "until" IDs and the block lifts once any matching node is owned, otherwise it is permanent. <b>Disable properties:</b> while owned, a node can switch off another node's <i>Effects</i>, <i>Automation</i>, <i>Type-change rule</i>, or, for Rebirth nodes, the <i>Currency reset</i> (name currencies, or blank = all) and <i>Upgrade reset</i> (IDs, or blank = all). Example: an upgrade with "Currency reset → R1" and value <code>Points, Experience</code> makes rebirths stop resetting those.
+        </div>
+        <div>
+          <b class="text-slate-200">Automation &amp; type changes</b><br>
+          <b>Automation Unlock</b> / <b>Perma-Automation Unlock</b> nodes, once owned, buy every upgrade whose ID matches their field (<code>U#</code>) as soon as it is affordable; a delay in seconds slows it (0 = instant). Perma-Automation survives rebirth. Any node can also have "When owned: change type of nodes" — e.g. an owned prestige upgrade turning <code>R12</code> into a Permanent Unlock so rebirths keep it. IDs: <code>R12</code> = exactly that node, <code>R#</code> = letter R + digits.
+        </div>
+        <div>
+          <b class="text-slate-200">Rebirth (reset layer)</b><br>
+          Set a node's type to <b>Rebirth (Reset)</b>. While simulating, click it once its Costs (the requirement, not spent) are met: the gain formula converts your whole current balance (<code>rebirth_points = (points/100000)^0.5</code>), adds it to that currency, then resets currencies and the upgrades/boards whose ID matches its “Reset upgrades of beginning ID of” field (<code>U#</code> hits U1, U12 but not UA1; blank = all). Kept: the gained currency, extra "keep" currencies, Permanent Unlock nodes, other Rebirth nodes and (optionally) root upgrades. Naming a node's exact ID in the reset field (e.g. <code>R12</code>) resets it even if it is permanent. Boards reset too. Put the formula here rather than in Effects.
+        </div>
+        <div>
+          <b class="text-slate-200">Formulas</b><br>
+          An effect modifier can be a formula (give it a Target currency). <code>x2^level</code> or a bare <code>log10(points)</code> <i>multiplies</i> the target; <code>+sqrt(points)</code> <i>adds</i> per second. Plain numbers (<code>x2</code>) still apply once per level; formulas are evaluated as written, so use <code>level</code> inside them. Operators <code>+ - * / % ^</code>; functions <code>log10 log2 ln log(x,base) exp sqrt cbrt abs floor ceil round min max pow clamp sin cos</code>; constants <code>pi e</code>. Variables: currency names in lowercase (<code>points</code>, <code>rebirth_points</code>), <code>level</code>, <code>time</code>, and any node/board id (<code>u7</code> = its level). Rebirth nodes also give <code>s1_gain</code> (for node S1): what a click would give right now, before its currency's multipliers — so <code>+s1_gain/s</code> generates 100% of a click's gain every second (<code>+s1_gain*0.1/s</code> for 10%). Tip: <code>log10(points)</code> is below 1 for fewer than 10 points — use <code>max(1, log10(points))</code> to avoid slowing yourself.
+        </div>
+        <div>
+          <b class="text-slate-200">Boards</b><br>
+          Set a node's type to <b>Board</b>. When simulating, it unlocks once its parents are owned, then drains its currency (or tracks income) into a progress bar and levels up automatically; overflow carries over. "Needed for next level" is a formula of <code>level</code>. Stat lines are live formulas shown on the board (e.g. label <code>Point Buff</code>, formula <code>2^level</code>, prefix <code>x</code>). Put the gameplay effect in Effects, e.g. target <code>Points</code>, modifier <code>x2^level</code>.
+        </div>
+        <div>
+          <b class="text-slate-200">Numbers</b><br>
+          Costs/rates accept <code>1e6</code> and suffixes: K, M, B, T, Qa (=Qd), Qi, Sx, Sp, Oc, No, Dc.
+        </div>
+        <div>
+          <b class="text-slate-200">Simulate Play</b><br>
+          States: <b>Locked</b> (grey, parents not owned) → <b>Available</b> (glows when affordable) → <b>Owned / Maxed</b>. Click an available node to buy it. Dragging is disabled while simulating. Your work autosaves in this browser.
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+</div>
+
+<datalist id="dl-cur"></datalist>
+<div id="toasts" class="fixed bottom-16 left-half -translate-x-half z-toast flex flex-col gap-2 items-center" data-ui></div>
+
+<!-- ======================= IMPORT / EXPORT MODAL ======================= -->
+<div id="modal" class="overlay" data-ui>
+  <div class="modal-card w-full max-w-2xl p-4 flex flex-col gap-3" style="max-height:90vh">
+    <div class="flex items-center justify-between">
+      <h2 id="mTitle" class="font-semibold text-lg"></h2>
+      <button class="icon-btn" id="mClose">✕</button>
+    </div>
+    <p id="mDesc" class="hint"></p>
+    <textarea id="mText" class="inp font-mono" rows="16" spellcheck="false" style="font-size:12px"></textarea>
+    <div id="mMsg" class="text-sm"></div>
+    <div id="mBtns" class="flex gap-2 justify-end flex-wrap"></div>
+    <input type="file" id="mFile" accept=".json,application/json,text/plain" style="display:none">
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =========================================================================
+   UPGRADE TREE DESIGNER — code map
+   1.  Constants & helpers
+   2.  State (the tree, view, selection) + simulation state
+   3.  Data model: default node, cycle detection, import/export parsing
+   4.  Undo / redo + autosave
+   5.  Rendering: view transform, nodes, edges, inspector, currencies, HUD
+   6.  Editing actions: add / delete / rename / connect
+   7.  Simulation engine: statuses, costs, rates, buying, tick loop
+   8.  Pointer interaction: pan, zoom, drag, connect tool
+   9.  Panel events (delegated), modal, keyboard, init
+   ========================================================================= */
+
+/* ---------- 1. CONSTANTS & HELPERS ---------- */
+const NW = 200, NH = 128, GRID = 20;               // node size (px) and grid step in world units
+const TYPES = {
+  normal:     { label: 'Normal',           icon: '◆', color: '#38bdf8' },
+  repeatable: { label: 'Repeatable',       icon: '↻', color: '#34d399' },
+  unlock:     { label: 'Permanent Unlock', icon: '⬢', color: '#a78bfa' },
+  auto:       { label: 'Automation Unlock',      icon: '⚙', color: '#2dd4bf' },
+  autoperm:   { label: 'Perma-Automation Unlock', icon: '⚙', color: '#34d399' },
+  milestone:  { label: 'Milestone / Rebirth', icon: '★', color: '#fbbf24' },
+  board:      { label: 'Board',            icon: '▤', color: '#fb923c' },
+  rebirth:    { label: 'Rebirth (Reset)',  icon: '♻', color: '#f87171' },
+  achievement:{ label: 'Achievement',      icon: '🏆', color: '#fcd34d' },
+  challenge:  { label: 'Challenge',        icon: '⚔', color: '#fb7185' },
+};
+const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+const SUFFIX_VALUES = { k:1e3, m:1e6, b:1e9, t:1e12, qa:1e15, qd:1e15, qi:1e18, sx:1e21, sp:1e24, oc:1e27, no:1e30, dc:1e33 };
+const STORAGE_KEY = 'upgradeTreeDesigner.v1';
+/* ---------- SETTINGS (stored separately from the tree) ---------- */
+const SETTINGS_KEY = 'upgradeTreeDesigner.settings.v1';
+const SETTING_DEFAULTS = { playMode: false, cheats: true, speed: 1, locked: 'show', buyMax: 'shift', buyMaxIds: '', tickRate: 10, fx: true, lineShape: 'curve', lineFx: 'none', snap: true, hint: true, autosave: true };
+const settings = Object.assign({}, SETTING_DEFAULTS);
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* ignore */ }
+const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
+const playLocked = () => sim.active && settings.playMode;          // Play mode: no editing, cheats, speed-ups or shortcuts
+const nodeHidden = n => !!n && sim.active && settings.locked === 'hide' && statusInfo(n).status === 'locked';
+function renderSettings() {
+  const S = settings;
+  const cb = (k, label, hint) => `<label class="flex items-start gap-2 text-sm text-slate-200 mb-2 cursor-pointer"><input type="checkbox" class="mt-1" data-set="${k}" ${S[k] ? 'checked' : ''}><span>${label}${hint ? `<span class="hint block">${hint}</span>` : ''}</span></label>`;
+  const sel = (k, label, opts, num) => `<label class="lbl">${label}</label><select class="inp mb-2" data-set="${k}" ${num ? 'data-num="1"' : ''}>${opts.map(([v, t]) => `<option value="${v}" ${String(S[k]) === String(v) ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+  $('tab-settings').innerHTML = `<div class="lbl" style="margin-top:0">Simulation</div>`
+    + cb('playMode', 'Play mode', 'The top button becomes <b>Play</b>: while playing, editing nodes, undo/import/clear, the side panel, keyboard shortcuts, ⚡ cheats and speed-ups are all disabled. (Not tamper-proof against browser dev tools.)')
+    + cb('cheats', 'Cheat buttons (⚡) &amp; Dev panel in Test mode', 'Dev panel: grant currencies, infinite resources, live production breakdown. Ignored in Play mode.')
+    + sel('speed', 'Starting speed in Test mode', [[1, '1×'], [5, '5×'], [20, '20×'], [100, '100×']], true)
+    + sel('buyMax', 'Buy max on repeatable upgrades', [['shift', 'Shift-click'], ['all', 'Every click'], ['off', 'Off']])
+    + sel('tickRate', 'Simulation updates per second', [[5, '5 (lightest)'], [10, '10 (default)'], [20, '20'], [30, '30'], [60, '60 (smoothest)']], true)
+    + `<label class="lbl">Always buy max on these IDs</label><input class="inp mb-2" data-set="buyMaxIds" placeholder="e.g. N4, K#" value="${esc(S.buyMaxIds)}">`
+    + `<div class="lbl">Appearance</div>`
+    + sel('locked', 'Locked nodes while simulating', [['show', 'Dimmed (normal)'], ['mystery', 'Shown as “???”'], ['hide', 'Hidden until unlocked']])
+    + sel('lineShape', 'Connection shape', [['curve', 'Smooth curves'], ['straight', 'Straight lines'], ['step', 'Right-angle steps']])
+    + sel('lineFx', 'Connection style', [['none', 'Plain'], ['neon', 'Glowing neon'], ['flow', 'Animated flow (owned links, while simulating)']])
+    + cb('fx', 'Play VFX (particles, shake…)', 'Turn off for accessibility or performance. The VFX tab’s Test buttons always play.')
+    + `<div class="lbl">General</div>`
+    + cb('snap', 'Snap to grid by default') + cb('hint', 'Show the hint bar') + cb('autosave', 'Autosave the tree in this browser', 'Turn off to stop writing to browser storage.')
+    + `<button class="btn small mt-2" data-act="resetSettings">Reset settings</button>`;
+}
+function applySettings() {
+  state.snap = settings.snap; $('chkSnap').checked = settings.snap;
+  if (settings.playMode && sim.active) sim.speed = 1;
+  if (sim.timer) { clearInterval(sim.timer); sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10)); }
+  fullRender();
+}
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const snapv = v => Math.round(v / GRID) * GRID;
+const natCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+// Plain numeric parse with fallback (for coordinates, levels, growth…)
+function numOr(v, d = 0) {
+  if (v === null || v === undefined || v === '') return d;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : d;
+}
+// Amount parse: accepts 1e6, "1,000", "5K", "1Qd", "+1Qd/s"
+function parseAmount(v, d = 0) {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : d;
+  if (v === null || v === undefined) return d;
+  const m = String(v).replace(/,/g, '').replace(/\/\s*s(ec)?$/i, '').trim()
+                     .match(/^([+-]?\d*\.?\d+(?:e[+-]?\d+)?)\s*([a-z]*)$/i);
+  if (!m) return d;
+  let n = parseFloat(m[1]);
+  if (m[2]) { const mult = SUFFIX_VALUES[m[2].toLowerCase()]; if (!mult) return d; n *= mult; }
+  return Number.isFinite(n) ? n : d;
+}
+// Pretty number: 1234 -> 1.23K
+function fmt(n) {
+  if (!Number.isFinite(n)) return n > 0 ? '∞' : '0';
+  const a = Math.abs(n);
+  if (a < 1000) return String(Math.round(n * 100) / 100);
+  const i = Math.floor(Math.log10(a) / 3);
+  if (i < SUFFIXES.length) {
+    const v = n / Math.pow(1000, i);
+    let s = Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2);
+    if (s.includes('.')) s = s.replace(/\.?0+$/, '');
+    return s + SUFFIXES[i];
+  }
+  return n.toExponential(2).replace('+', '');
+}
+// Currency names are matched loosely: case-insensitive, ignoring a trailing "s" or "/s"
+const normName = s => String(s || '').trim().toLowerCase().replace(/\s*\/\s*s(ec)?$/, '').replace(/s$/, '');
+
+/* ---------- 2. STATE ---------- */
+const state = {
+  nodes: {},            // id -> node object (see defaultNode)
+  currencies: [],       // [{ name, start, rate }]
+  view: { x: 0, y: 0, k: 1 },   // pan (x,y in screen px) and zoom (k)
+  selected: null,       // selected node id
+  selectedEdge: null,   // { from, to } of a selected connection
+  tool: 'select',       // 'select' | 'connect'
+  connectFrom: null,    // parent id chosen during connect
+  snap: true,
+};
+const sim = { active: false, running: true, speed: 1, balances: {}, levels: {}, rates: {}, timer: null, last: 0, boards: {}, time: 0, autoT: {} };
+const els = {};          // node id -> DOM element (kept so we can update without rebuilding)
+let edgeList = [];       // edges of the last render, indexed by data-ei attribute
+let mouseWorld = { x: 0, y: 0 };
+
+const viewport = $('viewport'), world = $('world'), nodesLayer = $('nodes'), edgeG = $('edgeG'), rubber = $('rubber');
+
+/* ---------- 3. DATA MODEL ---------- */
+/* ---------- FORMULAS ----------
+   Safe mini-language (no eval). Operators + - * / % ^ ( ), numbers with suffixes (5K, 1e6),
+   functions, and variables: currency names (points, rebirth_points), node/board ids (u7 = its level),
+   `level` (this node's level), `time`, and on board lines `progress` / `need`.            */
+const FN = Object.assign(Object.create(null), {
+  log10: Math.log10, log2: Math.log2, ln: Math.log, exp: Math.exp, sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs,
+  floor: Math.floor, ceil: Math.ceil, round: Math.round, trunc: Math.trunc, sign: Math.sign,
+  sin: Math.sin, cos: Math.cos, tan: Math.tan, atan: Math.atan, pow: Math.pow, min: Math.min, max: Math.max,
+  log: (x, b) => b === undefined ? Math.log(x) : Math.log(x) / Math.log(b),
+  clamp: (x, a, b) => Math.min(b, Math.max(a, x)),
+  if: (c, a, b) => (c ? a : b),
+  softcap: (x, start, pw) => (x <= start ? x : start * Math.pow(x / start, pw)),   // beyond `start`, growth is raised to the power `pw`
+});
+const FCONST = { pi: Math.PI, e: Math.E };
+const ident = s => { const k = String(s ?? '').toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, ''); return /^\d/.test(k) ? '_' + k : k; };
+function parseFormula(src) {
+  const toks = []; let i = 0, m;
+  while (i < src.length) {
+    const rest = src.slice(i);
+    if ((m = /^\s+/.exec(rest))) { i += m[0].length; continue; }
+    if ((m = /^(\d*\.?\d+(?:e[+-]?\d+)?)([a-z]*)(?![a-z0-9_])/i.exec(rest)) && (!m[2] || SUFFIX_VALUES[m[2].toLowerCase()])) {
+      toks.push({ n: parseFloat(m[1]) * (m[2] ? SUFFIX_VALUES[m[2].toLowerCase()] : 1) }); i += m[0].length; continue; }
+    if ((m = /^[a-z_][a-z0-9_]*/i.exec(rest))) { toks.push({ id: m[0].toLowerCase() }); i += m[0].length; continue; }
+    if ((m = /^(\*\*|>=|<=|==|!=|&&|\|\||[-+*\/%^(),×÷<>])/.exec(rest))) { toks.push({ op: m[0] === '**' ? '^' : m[0] === '×' ? '*' : m[0] === '÷' ? '/' : m[0] }); i += m[0].length; continue; }
+    throw new Error(`Unexpected "${rest[0]}"`);
+  }
+  let p = 0; const isOp = o => toks[p] && toks[p].op === o;
+  const expr = () => { let a = term(); while (isOp('+') || isOp('-')) { const o = toks[p++].op; a = ['b', o, a, term()]; } return a; };
+  const term = () => { let a = unary(); while (isOp('*') || isOp('/') || isOp('%')) { const o = toks[p++].op; a = ['b', o, a, unary()]; } return a; };
+  const unary = () => isOp('-') ? (p++, ['neg', unary()]) : isOp('+') ? (p++, unary()) : power();
+  const power = () => { const a = atom(); return isOp('^') ? (p++, ['b', '^', a, unary()]) : a; };
+  const cmp = () => { const a = expr(); if (toks[p] && ['>=', '<=', '==', '!=', '>', '<'].includes(toks[p].op)) { const o = toks[p++].op; return ['b', o, a, expr()]; } return a; };
+  const logic = () => { let a = cmp(); while (isOp('&&') || isOp('||')) { const o = toks[p++].op; a = ['b', o, a, cmp()]; } return a; };
+  const atom = () => {
+    const t = toks[p++]; if (!t) throw new Error('Formula ended unexpectedly');
+    if (t.n !== undefined) return ['n', t.n];
+    if (t.id) {
+      if (!isOp('(')) return ['v', t.id];
+      p++; const args = [];
+      if (!isOp(')')) { do args.push(logic()); while (isOp(',') && ++p); }
+      if (!isOp(')')) throw new Error('Missing ")"'); p++; return ['f', t.id, args];
+    }
+    if (t.op === '(') { const a = logic(); if (!isOp(')')) throw new Error('Missing ")"'); p++; return a; }
+    throw new Error(`Unexpected "${t.op}"`);
+  };
+  const a = logic(); if (p < toks.length) throw new Error(`Unexpected "${toks[p].op ?? toks[p].id ?? toks[p].n}"`);
+  return a;
+}
+function evalAst(a, v) {
+  switch (a[0]) {
+    case 'n': return a[1];
+    case 'v': if (a[1] in v) return v[a[1]]; if (a[1] in FCONST) return FCONST[a[1]]; throw new Error(`Unknown name "${a[1]}"`);
+    case 'neg': return -evalAst(a[1], v);
+    case 'f': { const f = FN[a[1]]; if (!f) throw new Error(`Unknown function "${a[1]}"`); return f(...a[2].map(x => evalAst(x, v))); }
+    default: { const x = evalAst(a[2], v), y = evalAst(a[3], v);
+      return a[1] === '+' ? x + y : a[1] === '-' ? x - y : a[1] === '*' ? x * y : a[1] === '/' ? x / y : a[1] === '%' ? x % y : a[1] === '^' ? Math.pow(x, y)
+        : a[1] === '>' ? +(x > y) : a[1] === '<' ? +(x < y) : a[1] === '>=' ? +(x >= y) : a[1] === '<=' ? +(x <= y) : a[1] === '==' ? +(x === y) : a[1] === '!=' ? +(x !== y) : a[1] === '&&' ? +(!!x && !!y) : +(!!x || !!y); }
+  }
+}
+const fCache = new Map();
+function compileFormula(src) {
+  src = String(src ?? '').trim(); let c = fCache.get(src);
+  if (!c) { try { c = { ast: parseFormula(src) }; } catch (e) { c = { error: e.message }; } if (fCache.size > 500) fCache.clear(); fCache.set(src, c); }
+  return c;
+}
+function evalFormula(src, vars) { const c = compileFormula(src); if (c.error) return NaN; try { const v = evalAst(c.ast, vars); return typeof v === 'number' ? v : NaN; } catch (e) { return NaN; } }
+function formulaError(src) {
+  const c = compileFormula(src); if (c.error) return c.error;
+  try { const v = baseVars(); v.level = v.progress = v.need = 1; evalAst(c.ast, v); return ''; } catch (e) { return e.message; }
+}
+function levelOf(n) { return n.type === 'board' ? (sim.boards[n.id] ? sim.boards[n.id].level : n.board.startLevel) : (sim.levels[n.id] || 0); }
+const G = () => state.globals || (state.globals = []);
+/* ---------- QoL: search, breakdown, variables, autocomplete, dev panel ---------- */
+let searchQ = '';
+function searchHit(n) {
+  if (!searchQ) return null;
+  const hay = [n.id, n.title, n.description, TYPES[n.type].label, n.tag ? '#' + n.tag : '', ...n.effects.map(e => `${e.modifier} ${e.target}`), ...n.costs.map(c => c.currency)].join(' ').toLowerCase();
+  return searchQ.split(/\s+/).every(t => hay.includes(t));
+}
+const searchClass = n => { const h = searchHit(n); return h === null ? '' : h ? ' sr-hit' : ' sr-dim'; };
+function breakdown(c) {                                            // mirrors computeRates for one currency
+  const base = baseVars(), lines = []; let add = c.rate || 0, mul = 1, pw = 1;
+  if (c.rate) lines.push(`base  +${fmt(c.rate)}/s`);
+  for (const n of Object.values(state.nodes)) {
+    if (n.type === 'rebirth' || disabledOn(n, 'effects').length) continue;
+    const isB = n.type === 'board', act = isB ? boardUnlocked(n) : (sim.levels[n.id] || 0) > 0; if (!act) continue;
+    const lvl = isB ? boardState(n).level : sim.levels[n.id];
+    for (const e of n.effects) {
+      const p = parseEffect(e); if (!p || normName(p.target) !== normName(c.name)) continue;
+      let v; if (p.formula) { v = evalFormula(p.expr, nodeVars(base, n, lvl)); if (!Number.isFinite(v)) { lines.push(`⚠ ${n.id}: formula "${p.expr}" gives no number`); continue; } }
+      else v = p.kind === 'mul' ? Math.pow(p.value, lvl) : p.value * lvl;
+      if (p.kind === 'pow') { pw *= v; lines.push(`^${fmt(v)}   ${n.id} ${n.title}`); } else if (p.kind === 'mul') { mul *= v; lines.push(`×${fmt(v)}   ${n.id} ${n.title}`); } else { add += v; lines.push(`+${fmt(v)}/s   ${n.id} ${n.title}`); }
+    }
+  }
+  const cn = sim.challenge && state.nodes[sim.challenge];
+  if (cn) for (const e of cn.penalty) {
+    const p = parseEffect(e); if (!p || normName(p.target) !== normName(c.name)) continue;
+    const v = p.formula ? evalFormula(p.expr, nodeVars(base, cn, 0)) : p.value; if (!Number.isFinite(v)) continue;
+    if (p.kind === 'pow') pw *= v; else if (p.kind === 'mul') mul *= v; else add += v;
+    lines.push(`⚔ penalty ${p.kind === 'pow' ? '^' : p.kind === 'mul' ? '×' : '+'}${fmt(v)}   ${cn.title}`);
+  }
+  return lines.join('\n') + `\n= (${fmt(add)}) × ${fmt(mul)}${pw !== 1 ? ' ^' + fmt(pw) : ''} = ${fmt(Math.pow(Math.max(add * mul, 0), pw))}/s`;
+}
+function renderVars() {
+  const v = baseVars();
+  $('tab-vars').innerHTML = `<div class="hint mb-2">Global constants usable in every formula by name (e.g. <code>base_speed</code>). Values can be numbers or formulas; a variable may use the ones above it.</div>`
+    + G().map((g, i) => { const r = evalFormula(g.value, v); return `<div class="row mb-1"><input class="inp font-mono" style="width:110px" placeholder="name" data-g="${i}" data-k="name" value="${esc(g.name)}"><input class="inp font-mono" placeholder="value" data-g="${i}" data-k="value" value="${esc(g.value)}"><span class="hint" style="min-width:52px">${Number.isFinite(r) ? '= ' + fmt(r) : '⚠'}</span><button class="icon-btn" data-act="delVar" data-g="${i}">✕</button></div>`; }).join('')
+    + `<button class="btn small" data-act="addVar">＋ Variable</button>`;
+}
+function renderDev() {
+  const box = $('devBox'), on = sim.active && settings.cheats && !settings.playMode;
+  box.style.display = on ? '' : 'none'; if (!on) return;
+  const ci = Math.min(sim.devCur || 0, state.currencies.length - 1);
+  box.innerHTML = `<div class="flex items-center gap-2 mb-2 flex-wrap"><b class="text-sm">Dev panel</b><label class="text-xs flex items-center gap-1"><input type="checkbox" data-dev="inf" ${sim.infinite ? 'checked' : ''}> Infinite resources</label></div>
+    <div class="flex items-center gap-1 mb-2"><select class="inp" style="width:auto" data-dev="cur">${state.currencies.map((c, i) => `<option value="${i}" ${i === ci ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
+    <input class="inp" style="width:80px" data-dev="amt" value="${esc(sim.devAmt || '1M')}"><button class="btn small" data-dev="grant">Grant</button><button class="btn small" data-dev="set">Set</button></div>
+    <div class="flex gap-1 mb-2"><button class="btn small" data-dev="exp">Export save</button><button class="btn small" data-dev="imp">Import save</button></div>
+    <pre id="devBreak" class="text-xs" style="white-space:pre-wrap;max-width:360px;max-height:190px;overflow:auto;margin:0"></pre>`;
+  updateDevBreak();
+}
+function updateDevBreak() { const el = $('devBreak'), c = state.currencies[sim.devCur || 0]; if (el && c && sim.active) el.textContent = `${c.name} — where production comes from\n${breakdown(c)}`; }
+let acEl = null, acSel = 0, acInput = null;
+const AC_SEL = 'input[data-field="effMod"], input[data-field="boardReq"], input[data-field="lineFormula"], input[data-field="rbGain"], input[data-k="value"]';
+function acNames() {
+  const L = new Set([...Object.keys(FN).map(f => f + '('), 'pi', 'e', 'level', 'time', 'progress', 'need']);
+  state.currencies.forEach(c => { L.add(ident(c.name)); L.add(ident(normName(c.name))); });
+  Object.values(state.nodes).forEach(n => { L.add(ident(n.id)); if (n.type === 'rebirth') L.add(ident(n.id) + '_gain'); });
+  G().forEach(g => L.add(ident(g.name)));
+  return [...L].filter(Boolean);
+}
+function acHide() { if (acEl) acEl.style.display = 'none'; acInput = null; }
+function acShow(input) {
+  const before = input.value.slice(0, input.selectionStart), m = /[a-z_][a-z0-9_]*$/i.exec(before);
+  if (!m) return acHide();
+  const tok = m[0].toLowerCase(), list = acNames().filter(x => x.startsWith(tok) && x !== tok).sort().slice(0, 8);
+  if (!list.length) return acHide();
+  if (!acEl) { acEl = document.createElement('div'); acEl.className = 'ac'; document.body.appendChild(acEl);
+    acEl.addEventListener('mousedown', e => { e.preventDefault(); const d = e.target.closest('[data-w]'); if (d) acPick(d.dataset.w); }); }
+  acInput = input; acSel = 0; acEl._tok = m[0].length;
+  const r = input.getBoundingClientRect(); acEl.style.left = r.left + 'px'; acEl.style.top = r.bottom + 2 + 'px'; acEl.style.display = '';
+  acEl.innerHTML = list.map((w, i) => `<div data-w="${esc(w)}" class="${i ? '' : 'on'}">${esc(w)}</div>`).join('');
+}
+function acPick(w) {
+  const i = acInput; if (!i) return; const pos = i.selectionStart, n = acEl._tok;
+  i.value = i.value.slice(0, pos - n) + w + i.value.slice(pos); i.selectionStart = i.selectionEnd = pos - n + w.length;
+  acHide(); i.dispatchEvent(new Event('input', { bubbles: true })); i.focus();
+}
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches(AC_SEL)) acShow(e.target); });
+document.addEventListener('keydown', e => {
+  if (!acEl || acEl.style.display === 'none' || e.target !== acInput) return;
+  const items = [...acEl.children];
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); acSel = (acSel + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length; items.forEach((d, i) => d.classList.toggle('on', i === acSel)); }
+  else if (e.key === 'Tab' || e.key === 'Enter') { e.preventDefault(); acPick(items[acSel].dataset.w); }
+  else if (e.key === 'Escape') acHide();
+}, true);
+document.addEventListener('focusout', e => { if (e.target === acInput) setTimeout(acHide, 120); });
+/* ---------- MULTI-SELECTION (design mode) ---------- */
+let multi = new Set(), clip = null, pasteN = 0;
+const updateMultiLabel = () => { $('multiCount').textContent = multi.size > 1 ? `${multi.size} selected · drag, Del, Ctrl+C/V` : ''; };
+function setMulti(ids) {
+  const prev = [...multi]; multi = new Set(ids.filter(id => state.nodes[id]));
+  if (multi.size && state.selected) { const o = state.selected; state.selected = null; if (state.nodes[o]) updateNodeEl(state.nodes[o], true); renderInspector(); renderEdges(); }
+  new Set([...prev, ...multi]).forEach(id => state.nodes[id] && updateNodeEl(state.nodes[id], true));
+  updateMultiLabel(); updateHint();
+}
+const clearMulti = () => setMulti([]);
+function toggleMulti(id) {
+  const next = new Set(multi); if (!multi.size && state.selected && state.selected !== id) next.add(state.selected);
+  next.has(id) ? next.delete(id) : next.add(id); setMulti([...next]);
+}
+function drawBox(d) {
+  let m = $('marquee');
+  if (!m) { m = document.createElement('div'); m.id = 'marquee'; m.style.cssText = 'position:absolute;z-index:6;pointer-events:none;border:1px dashed #facc15;background:rgba(250,204,21,.08)'; viewport.appendChild(m); }
+  m.style.left = Math.min(d.x0, d.x1) + 'px'; m.style.top = Math.min(d.y0, d.y1) + 'px'; m.style.width = Math.abs(d.x1 - d.x0) + 'px'; m.style.height = Math.abs(d.y1 - d.y0) + 'px';
+}
+function endBox(d) {
+  const m = $('marquee'); if (m) m.remove();
+  if (!d.moved) { clearMulti(); return; }
+  const v = state.view, k = v.k, x0 = (Math.min(d.x0, d.x1) - v.x) / k, x1 = (Math.max(d.x0, d.x1) - v.x) / k, y0 = (Math.min(d.y0, d.y1) - v.y) / k, y1 = (Math.max(d.y0, d.y1) - v.y) / k;
+  setMulti(Object.values(state.nodes).filter(n => { const e = els[n.id], w = e ? e.offsetWidth : 200, h = e ? e.offsetHeight : 128; return n.x < x1 && n.x + w > x0 && n.y < y1 && n.y + h > y0; }).map(n => n.id));
+}
+function deleteNodes(ids) {
+  ids = [...ids].filter(i => state.nodes[i]); if (!ids.length) return;
+  pushUndo(); const set = new Set(ids);
+  ids.forEach(id => { delete state.nodes[id]; delete sim.levels[id]; delete sim.boards[id]; });
+  for (const o of Object.values(state.nodes)) o.parents = o.parents.filter(p => !set.has(p));
+  multi = new Set(); if (set.has(state.selected)) state.selected = null; if (set.has(state.connectFrom)) state.connectFrom = null;
+  renderNodes(); renderEdges(); renderInspector(); updateHint(); updateRubber(); updateMultiLabel(); save();
+}
+function copyNodes() {
+  const ids = multi.size ? [...multi] : state.selected ? [state.selected] : []; if (!ids.length) return;
+  clip = ids.map(id => JSON.parse(JSON.stringify(state.nodes[id]))); pasteN = 0; toast(`Copied ${clip.length} node${clip.length > 1 ? 's' : ''}`, 'ok');
+}
+function pasteNodes() {
+  if (!clip || !clip.length) return; pushUndo(); pasteN++;
+  const map = {}, used = new Set(Object.keys(state.nodes)), made = [];
+  const nextId = old => { const m = /^([A-Za-z]+)\d+$/.exec(old), pre = m ? m[1] : 'U'; let mx = 0; for (const k of used) { const mm = new RegExp('^' + pre + '(\\d+)$').exec(k); if (mm) mx = Math.max(mx, +mm[1]); } const id = pre + (mx + 1); used.add(id); return id; };
+  clip.forEach(o => { map[o.id] = nextId(o.id); });
+  clip.forEach(o => {
+    const n = JSON.parse(JSON.stringify(o)); n.id = map[o.id]; n.parents = o.parents.filter(p => map[p]).map(p => map[p]);   // keep links between copied nodes only
+    n.x = o.x + 40 * pasteN; n.y = o.y + 40 * pasteN; state.nodes[n.id] = n; updateNodeEl(n, true); made.push(n.id);
+  });
+  setMulti(made.length > 1 ? made : []); if (made.length === 1) select(made[0]); renderEdges(); save(); toast(`Pasted ${made.length} node${made.length > 1 ? 's' : ''}`, 'ok');
+}
+let lastShift = false; window.addEventListener('pointerdown', e => { lastShift = e.shiftKey; }, true);
+function styleInspector(n) {
+  return `<label class="lbl">Colour &amp; tag</label><div class="row"><input type="color" class="inp" style="width:44px;padding:1px" data-field="nodeColor" value="${n.color || TYPES[n.type].color}"><button class="btn small" data-action="clearColor">Reset</button><input class="inp" placeholder="tag, e.g. combat" data-field="nodeTag" value="${esc(n.tag)}"></div><input class="inp mt-1" placeholder="Icon: emoji or image URL" data-field="nodeIcon" value="${esc(n.icon)}"><select class="inp mt-1" data-field="nodeVfx"><option value="">No VFX trigger</option>${(state.vfx || []).map(v => `<option value="${esc(v.name)}" ${n.vfx === v.name ? 'selected' : ''}>VFX: ${esc(v.name)}</option>`).join('')}</select>`;
+}
+let gainGuard = false;
+function baseVars() {
+  const v = Object.create(null);
+  for (const g of G()) { const k = ident(g.name), x = evalFormula(g.value, v); if (k && Number.isFinite(x)) v[k] = x; }   // global constants (may use earlier ones)
+  for (const n of Object.values(state.nodes)) { const k = ident(n.id); if (k) v[k] = levelOf(n); }
+  for (const c of state.currencies) { const b = balanceOf(c.name); for (const k of [ident(c.name), ident(normName(c.name))]) if (k) v[k] = b; }
+  for (const n of Object.values(state.nodes)) if (n.type === 'rebirth') {            // <id>_gain: what that rebirth would give now, before its currency's multipliers
+    Object.defineProperty(v, ident(n.id) + '_gain', { enumerable: true, get() {
+      if (gainGuard) return 0; gainGuard = true;
+      try { let a = evalFormula(rebirthTarget(n).expr, nodeVars(baseVars(), n, levelOf(n))); if (n.rebirth.floor) a = Math.floor(a); return Number.isFinite(a) ? a : 0; } finally { gainGuard = false; }
+    } });
+  }
+  v.time = sim.time || 0; v.level = 0; return v;
+}
+function nodeVars(base, n, level) { const v = Object.create(base); v.level = level; return v; }
+
+/* ---------- REBIRTH (reset layer) ----------
+   Click an available Rebirth node: the gain formula is evaluated on the CURRENT balances (e.g. all your points),
+   the result is added to the target currency, then currencies and upgrades reset (except kept/permanent ones). */
+function defaultRebirth() { return { gain: 'rebirth_points = (points / 100000)^0.5', currency: 'Rebirth Points', floor: true, keep: '', keepRoots: true, reset: '' }; }
+function normRebirth(r) {
+  const d = defaultRebirth(); if (!r || typeof r !== 'object') return d;
+  return { gain: String(r.gain ?? d.gain), currency: String(r.currency ?? d.currency).trim(), floor: r.floor !== false, keep: String(r.keep ?? ''), keepRoots: r.keepRoots !== false, reset: String(r.reset ?? '') };
+}
+function rebirthTarget(n) {
+  const r = n.rebirth, m = /^\s*([a-z_][a-z0-9_]*)\s*=(?!=)\s*([\s\S]+)$/i.exec(r.gain || '');
+  let cur = null, expr = r.gain;
+  if (m) { expr = m[2]; const k = m[1].toLowerCase(); cur = state.currencies.find(c => ident(c.name) === k || ident(normName(c.name)) === k) || null; }
+  return { cur: cur || findCurrency(r.currency), expr };
+}
+/* Scope: "U#" matches ids that are exactly the letters U followed by digits (U1, U12 — not UA1). Comma-separate several. Blank = everything. */
+function normRetype(r) { return { ids: String((r && r.ids) ?? ''), to: r && TYPES[r.to] ? r.to : 'unlock' }; }
+function normBlocks(r) { return { ids: String((r && r.ids) ?? ''), until: String((r && r.until) ?? '') }; }
+function normDisables(r) { return Array.isArray(r) ? r.filter(d => d && typeof d === 'object').map(d => ({ ids: String(d.ids ?? ''), prop: DISABLE_PROPS.some(x => x[0] === d.prop) ? d.prop : 'effects', val: String(d.val ?? '') })) : []; }
+function normAuto(r) { return { ids: String((r && r.ids) ?? 'U#'), delay: Math.max(0, numOr(r && r.delay, 0)) }; }
+function rebirthScope(n) { return idMatcher(n.rebirth.reset); }
+const idCache = new Map();
+function idMatcher(str) { const k = String(str || ''); let f = idCache.get(k); if (!f) idCache.set(k, f = idMatcherRaw(k)); return f; }
+function idMatcherRaw(str) {
+  const toks = String(str || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (!toks.length) return () => true;
+  const res = toks.map(t => new RegExp('^' + (t.includes('#') ? t : /^[a-z]+$/i.test(t) ? t + '#' : t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/#/g, '\\d+') + '$', 'i'));
+  return id => res.some(r => r.test(id));
+}
+/* A node's effective type: an owned node with a "change type" rule overrides the type of the nodes it targets. */
+function effType(m) {
+  for (const o of Object.values(state.nodes)) {
+    if (o.retype && o.retype.ids.trim() && (sim.levels[o.id] || 0) > 0 && idMatcher(o.retype.ids)(m.id) && !disabledOn(o, 'retype').length) return o.retype.to;
+  }
+  return m.type;
+}
+const isPerm = m => { const t = effType(m); return t === 'unlock' || t === 'autoperm' || t === 'achievement' || t === 'challenge'; };
+/* Blocking: an owned node can forbid buying other nodes, permanently or until a node in `until` is owned. */
+function isBlocked(m) {
+  if (!sim.active) return false;
+  for (const o of Object.values(state.nodes)) {
+    const b = o.blocks; if (!b || !b.ids.trim() || o === m || !isOwnedId(o.id) || !idMatcher(b.ids)(m.id)) continue;
+    if (b.until.trim()) { const lift = idMatcher(b.until); if (Object.values(state.nodes).some(x => lift(x.id) && isOwnedId(x.id))) continue; }
+    return true;
+  }
+  return false;
+}
+/* Disabling: values of every OWNED node's rule that switches `prop` off for node m. */
+const DISABLE_PROPS = [['effects', 'Effects (boosts)'], ['resetCurrencies', 'Currency reset'], ['resetUpgrades', 'Upgrade reset'], ['automation', 'Automation'], ['retype', 'Type-change rule']];
+function disabledOn(m, prop) {
+  const out = [];
+  for (const o of Object.values(state.nodes)) {
+    if (!o.disables || !o.disables.length || !isOwnedId(o.id)) continue;
+    for (const d of o.disables) if (d.prop === prop && d.ids.trim() && idMatcher(d.ids)(m.id)) out.push(d.val || '');
+  }
+  return out;
+}
+function blockInspector(n) {
+  const b = n.blocks;
+  return `<label class="lbl">When owned: block buying nodes</label>
+    <input class="inp" placeholder="IDs to block, e.g. U5 or U#" data-field="blkIds" value="${esc(b.ids)}">
+    <input class="inp mt-1" placeholder="…until one of these is owned (blank = forever)" data-field="blkUntil" value="${esc(b.until)}">`;
+}
+function disableInspector(n) {
+  return `<label class="lbl">When owned: disable properties of nodes</label>` + n.disables.map((d, i) => `<div class="row"><input class="inp" style="width:78px" placeholder="IDs" data-field="dsIds" data-i="${i}" value="${esc(d.ids)}"><select class="inp" style="flex:1" data-field="dsProp" data-i="${i}">${DISABLE_PROPS.map(([k, t]) => `<option value="${k}" ${d.prop === k ? 'selected' : ''}>${t}</option>`).join('')}</select><button class="icon-btn" data-action="delDisable" data-i="${i}">✕</button></div>`
+    + (d.prop === 'resetCurrencies' || d.prop === 'resetUpgrades' ? `<input class="inp mt-1" placeholder="${d.prop === 'resetCurrencies' ? 'Currencies to protect, comma-separated (blank = all)' : 'Upgrade IDs to protect, e.g. U# (blank = all)'}" data-field="dsVal" data-i="${i}" value="${esc(d.val)}">` : '')).join('')
+    + `<button class="btn small" data-action="addDisable">＋ Disable property</button>`;
+}
+function autoBuy(m) {
+  const s = statusInfo(m); if (s.status !== 'available') return false;
+  const cs = costsAt(m, s.level); if (cs.some(c => balanceOf(c.currency) < c.amount)) return false;
+  cs.forEach(c => { sim.balances[findCurrency(c.currency).name] -= c.amount; });
+  sim.levels[m.id] = s.level + 1; sim.rates = computeRates(); return true;
+}
+function tickAuto(dt) {
+  for (const a of Object.values(state.nodes)) {
+    const t = effType(a); if ((t !== 'auto' && t !== 'autoperm') || !(sim.levels[a.id] > 0) || !a.auto.ids.trim() || disabledOn(a, 'automation').length) continue;
+    const d = Math.max(0, numOr(a.auto.delay, 0)); sim.autoT[a.id] = (sim.autoT[a.id] || 0) + dt;
+    if (sim.autoT[a.id] < d) continue; sim.autoT[a.id] = 0;
+    const match = idMatcher(a.auto.ids); let bought = true, guard = 0;
+    while (bought && guard++ < (d > 0 ? 1 : 300)) {          // instant: keep buying until nothing more is affordable
+      bought = false;
+      for (const m of Object.values(state.nodes)) if (m !== a && m.type !== 'board' && m.type !== 'rebirth' && match(m.id) && autoBuy(m)) bought = true;
+    }
+  }
+}
+function autoInspector(n) {
+  const a = n.auto;
+  return `<label class="lbl">Automation — buys upgrades with ID</label>
+    <input class="inp" data-field="autoIds" placeholder="e.g. U#  or  U#, B#" value="${esc(a.ids)}">
+    <div class="row mt-2"><label class="lbl" style="margin:0">Delay (seconds)</label><input class="inp" style="width:90px" data-field="autoDelay" value="${a.delay}"></div>
+    <div class="hint mt-1">While owned, matching upgrades are bought as soon as they're affordable (0 = instantly; repeatables keep buying). Perma-Automation survives rebirth.</div>`;
+}
+function retypeInspector(n) {
+  const r = n.retype;
+  return `<label class="lbl">When owned: change type of nodes</label>
+    <div class="row"><input class="inp" style="flex:1" placeholder="IDs: R12, or R#" data-field="rtIds" value="${esc(r.ids)}"><select class="inp" style="width:auto" data-field="rtType">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${r.to === k ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>`;
+}
+function rebirthGain(n) {
+  const t = rebirthTarget(n); let a = evalFormula(t.expr, nodeVars(baseVars(), n, levelOf(n)));
+  if (t.cur && sim.active && sim.mults && sim.mults[t.cur.name] !== undefined) a *= sim.mults[t.cur.name];   // x-boosts on the gained currency apply to the gain
+  if (n.rebirth.floor) a = Math.floor(a);
+  return { cur: t.cur, amount: Number.isFinite(a) ? a : 0 };
+}
+function doRebirth(n) {
+  sim.rates = computeRates();                                      // make sure multipliers reflect the current upgrades
+  const g = rebirthGain(n);
+  if (!g.cur) { toast('Rebirth has no valid target currency.', 'error'); return; }
+  const lack = costsAt(n, 0).find(c => balanceOf(c.currency) < c.amount);
+  if (lack) { toast(`Requirement: ${fmt(lack.amount)} ${lack.currency}.`, 'error'); return; }
+  if (!(g.amount > 0)) { toast('Rebirth would give nothing yet.', 'error'); return; }
+  const ck = x => ident(normName(x));                              // so "rebirth_points", "Rebirth Points" and "rebirth point" all match
+  const keep = new Set([ck(g.cur.name), ...n.rebirth.keep.split(',').map(ck).filter(Boolean)]);
+  const dc = disabledOn(n, 'resetCurrencies'), du = disabledOn(n, 'resetUpgrades');          // shields from owned upgrades, judged before resetting
+  const allCur = dc.some(v => !v.trim()), curShield = new Set(dc.flatMap(v => v.split(',')).map(ck).filter(Boolean));
+  const upShield = du.map(v => v.trim() ? idMatcher(v) : () => true);
+  state.currencies.forEach(c => { if (!allCur && !curShield.has(ck(c.name)) && !keep.has(ck(c.name))) sim.balances[c.name] = c.start; });
+  sim.balances[g.cur.name] = (sim.balances[g.cur.name] || 0) + g.amount;
+  const exact = new Set(String(n.rebirth.reset || '').split(',').map(x => x.trim().toLowerCase()).filter(x => x && !x.includes('#') && !/^[a-z]+$/.test(x)));   // exact IDs reset even permanent nodes
+  const inScope = rebirthScope(n), perm = new Set(Object.values(state.nodes).filter(isPerm).map(x => x.id));   // permanence is judged before anything resets
+  for (const m of Object.values(state.nodes)) {
+    if (!inScope(m.id) || upShield.some(f => f(m.id))) continue;
+    if (m.type === 'board') delete sim.boards[m.id];
+    else if (!exact.has(m.id.toLowerCase()) && (perm.has(m.id) || m.type === 'rebirth' || (n.rebirth.keepRoots && !m.parents.length))) continue;
+    else delete sim.levels[m.id];
+  }
+  sim.levels[n.id] = (sim.levels[n.id] || 0) + 1;
+  sim.rates = computeRates(); refreshSimNodes(); renderEdges(); updateHud();
+  toast(`Rebirth! +${fmt(g.amount)} ${g.cur.name}`, 'ok'); fxNode(n, { gain: `${fmt(g.amount)} ${g.cur.name}` });
+}
+function rebirthInspector(n) {
+  const r = n.rebirth, err = formulaError(rebirthTarget(n).expr), sel = (v, a, b) => `<option value="1" ${v ? 'selected' : ''}>${a}</option><option value="0" ${v ? '' : 'selected'}>${b}</option>`;
+  return `<label class="lbl">Rebirth — gain formula</label>
+    <input class="inp font-mono" data-field="rbGain" value="${esc(r.gain)}">
+    ${err ? `<div class="warn">⚠ ${esc(err)}</div>` : '<div class="hint">Evaluated on your current balances (<code>points</code> = ALL of them). <code>name = formula</code> picks the currency gained. Costs below are the requirement (not spent).</div>'}
+    <label class="lbl">Currency gained (if formula has no "name =")</label>
+    <input class="inp" list="dl-cur" data-field="rbCur" value="${esc(r.currency)}">
+    <div class="row mt-2"><div style="flex:1"><label class="lbl" style="margin:0 0 3px">Gain</label><select class="inp" data-field="rbFloor">${sel(r.floor, 'Round down', 'Keep decimals')}</select></div>
+      <div style="flex:1"><label class="lbl" style="margin:0 0 3px">Root upgrades</label><select class="inp" data-field="rbRoots">${sel(r.keepRoots, 'Keep', 'Reset too')}</select></div></div>
+    <label class="lbl">Also keep currencies (comma-separated)</label>
+    <input class="inp" data-field="rbKeep" placeholder="e.g. Zombies" value="${esc(r.keep)}">
+    <label class="lbl">Reset upgrades of beginning ID of</label>
+    <input class="inp" data-field="rbReset" placeholder="blank = all · e.g. U#  or  U#, B#" value="${esc(r.reset)}">
+    <div class="hint mt-1"><code>U#</code> = letter U + digits (U1, U12 — not UA1). Only matching upgrades/boards reset; others keep their state. Currencies still reset. Permanent Unlocks, Perma-Automation and Rebirth nodes are kept — unless you name their <b>exact ID</b> (e.g. <code>R12</code>); patterns like <code>R#</code> never reset them.</div>`;
+}
+
+/* ---------- BOARDS ---------- */
+function defaultBoard() { return { source: '', fill: 'consume', req: '100 * 1.5^level', startLevel: 0, maxLevel: 0, lines: [{ label: 'Level', formula: 'level', prefix: '', suffix: '' }] }; }
+function normBoard(r) {
+  const d = defaultBoard(); if (!r || typeof r !== 'object') return d;
+  return { source: String(r.source ?? '').trim(), fill: r.fill === 'income' ? 'income' : 'consume', req: String(r.req ?? d.req),
+    startLevel: Math.max(0, Math.floor(numOr(r.startLevel, 0))), maxLevel: Math.max(0, Math.floor(numOr(r.maxLevel, 0))),
+    lines: Array.isArray(r.lines) ? r.lines.filter(l => l && typeof l === 'object').map(l => ({ label: String(l.label ?? ''), formula: String(l.formula ?? ''), prefix: String(l.prefix ?? ''), suffix: String(l.suffix ?? '') })) : d.lines };
+}
+function isOwnedId(id) { const p = state.nodes[id]; if (!p) return false; return p.type === 'board' ? boardUnlocked(p) : (sim.levels[id] || 0) > 0; }
+function boardUnlocked(n) { return !n.parents.length || (n.requires === 'any' ? n.parents.some(isOwnedId) : n.parents.every(isOwnedId)); }
+function boardState(n) { return sim.boards[n.id] || (sim.boards[n.id] = { level: n.board.startLevel, progress: 0 }); }
+function boardView(n) {
+  const d = n.board, max = d.maxLevel > 0 ? d.maxLevel : Infinity, unlocked = !sim.active || boardUnlocked(n);
+  const b = sim.active && unlocked ? boardState(n) : { level: d.startLevel, progress: 0 };
+  return { level: b.level, progress: b.progress, need: evalFormula(d.req, nodeVars(baseVars(), n, b.level)), max, unlocked, hasBar: !!d.source };
+}
+function boardLines(n, bv) {
+  const v = nodeVars(baseVars(), n, bv.level); v.progress = bv.progress; v.need = bv.need;
+  return n.board.lines.map(l => { const x = evalFormula(l.formula, v); return `${l.label ? l.label + ': ' : ''}${l.prefix}${Number.isFinite(x) ? fmt(x) : '—'}${l.suffix}`; });
+}
+function boardNodeInner(n) {
+  const t = TYPES.board, bv = boardView(n), ln = bv.unlocked ? boardLines(n, bv) : [];
+  const badge = sim.active ? (bv.unlocked ? `Lv ${bv.level}${bv.max === Infinity ? '' : '/' + bv.max}` : 'LOCKED') : (n.parents.length ? '' : 'ROOT');
+  const pct = bv.need > 0 && Number.isFinite(bv.need) ? clamp(bv.progress / bv.need * 100, 0, 100) : 0;
+  const fx = ln[0] || n.effects.filter(e => e.modifier || e.target).map(e => `${e.modifier || ''} ${e.target || ''}`.trim()).join(' · ');
+  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
+    <div class="n-id">${esc(n.id)} · Board${n.tag ? ` · <span style="color:var(--c)">#${esc(n.tag)}</span>` : ''}</div><div class="n-desc">${esc(n.description)}</div>
+    ${bv.hasBar ? `<div class="bd-bar"><div class="bd-fill" style="width:${pct}%"></div><span class="bd-txt">${bv.level >= bv.max ? 'MAX' : fmt(bv.progress) + '/' + fmt(bv.need)}</span></div>` : '<div class="n-costs"><span class="chip dim">No bar (set a currency)</span></div>'}
+    <div class="n-fx">${esc(fx)}</div>`;
+}
+/* Each tick: move currency (or income) into the bar; level up (carrying overflow) while the requirement is met. */
+/* Achievements unlock on their own; challenges complete while active. Condition = formula, e.g. points >= 1e6 */
+function tickGoals() {
+  const v = baseVars();
+  for (const n of Object.values(state.nodes)) {
+    if ((n.type !== 'achievement' && n.type !== 'challenge') || (sim.levels[n.id] || 0) > 0 || !n.cond.trim() || !boardUnlocked(n) || isBlocked(n)) continue;
+    if (n.type === 'challenge' && sim.challenge !== n.id) continue;
+    if (!(evalFormula(n.cond, nodeVars(v, n, 0)) > 0)) continue;
+    sim.levels[n.id] = 1; if (sim.challenge === n.id) sim.challenge = null; fxNode(n);
+    toast(`${n.type === 'achievement' ? '🏆 Achievement' : '⚔ Challenge complete'}: ${n.title}`, 'ok');
+    sim.rates = computeRates(); renderEdges();
+  }
+}
+function challengeReset(n) {                                       // entering a challenge: reset currencies + matching upgrades
+  const ids = (n.chReset || '').trim(); if (!ids) return; const m = idMatcher(ids);
+  state.currencies.forEach(c => { sim.balances[c.name] = c.start; });
+  for (const x of Object.values(state.nodes)) {
+    if (x === n || !m(x.id) || isPerm(x) || x.type === 'rebirth') continue;
+    if (x.type === 'board') delete sim.boards[x.id]; else delete sim.levels[x.id];
+  }
+}
+function exportSave() { return btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, levels: sim.levels, balances: sim.balances, boards: sim.boards, time: sim.time, challenge: sim.challenge })))); }
+function importSave(str) {
+  try {
+    const o = JSON.parse(decodeURIComponent(escape(atob(String(str).trim())))); if (!o || o.v !== 1) throw new Error('bad');
+    sim.levels = o.levels || {}; sim.balances = o.balances || {}; sim.boards = o.boards || {}; sim.time = o.time || 0; sim.challenge = o.challenge || null;
+    sim.rates = computeRates(); fullRender(); toast('Save imported.', 'ok');
+  } catch (e) { toast('That is not a valid save string.', 'error'); }
+}
+const iconHtml = (n, t) => /^(https?:|data:image)/i.test(n.icon || '') ? `<img src="${esc(n.icon)}" style="width:18px;height:18px;border-radius:3px;object-fit:cover">` : esc(n.icon || t.icon);
+function goalInspector(n) {
+  const err = n.cond.trim() ? formulaError(n.cond) : '';
+  let h = `<label class="lbl">${n.type === 'achievement' ? 'Unlocks automatically when' : 'Challenge goal — completes when'}</label><input class="inp font-mono" placeholder="points >= 1e6" data-field="cond" value="${esc(n.cond)}">${err ? `<div class="warn">⚠ ${esc(err)}</div>` : '<div class="hint">Comparisons: &gt; &lt; &gt;= &lt;= == != and &amp;&amp; ||. Free; needs its parents owned.</div>'}`;
+  if (n.type === 'challenge') h += `<label class="lbl">On entering, reset upgrades with ID (blank = no reset)</label><input class="inp" placeholder="e.g. N#" data-field="chReset" value="${esc(n.chReset)}"><label class="lbl">Penalty while active</label>`
+    + n.penalty.map((e, i) => `<div class="row"><input class="inp" list="dl-cur" placeholder="Target" data-field="penTarget" data-i="${i}" value="${esc(e.target)}"><input class="inp" style="width:110px" placeholder="^0.5, x0.1" data-field="penMod" data-i="${i}" value="${esc(e.modifier)}"><button class="icon-btn" data-action="delPen" data-i="${i}">✕</button></div>`).join('')
+    + `<button class="btn small" data-action="addPen">＋ Penalty</button><div class="hint mt-1">The node's own Effects are the reward once completed. <code>^0.5</code> raises that currency's production to a power.</div>`;
+  return h;
+}
+/* ---------- VFX: creator-designed effects (particles, floating text, shake, ripple, flash) ---------- */
+const vfxDefault = () => ({ name: 'New effect',
+  particles: { on: true, shape: '✨', color: '#facc15', count: 24, size: 18, speed: 220, spread: 360, gravity: 400, life: 900 },
+  text: { on: false, content: '+{gain}', color: '#ffffff', size: 22, rise: 70, life: 1200 },
+  shake: { on: false, power: 8, ms: 400 }, ripple: { on: false, color: '#38bdf8', size: 260, ms: 700 }, flash: { on: false, color: '#ffffff', ms: 350 } });
+function normVfx(v) { const d = vfxDefault(), o = { name: String(v.name) }; for (const g of Object.keys(d)) if (g !== 'name') o[g] = Object.assign({}, d[g], v[g] && typeof v[g] === 'object' ? v[g] : {}); return o; }
+const VFX_PRESETS = [
+  { name: 'Sparkle burst' },
+  { name: 'Rebirth boom', particles: { shape: '●', color: '#f87171', count: 60, size: 14, speed: 380, gravity: 250 }, text: { on: true, color: '#fecaca', size: 28 }, shake: { on: true, power: 10, ms: 500 }, ripple: { on: true, color: '#f87171', size: 420, ms: 900 }, flash: { on: true, color: '#f87171', ms: 400 } },
+  { name: 'Milestone ripple', particles: { on: false }, ripple: { on: true, color: '#fbbf24', size: 300, ms: 800 }, text: { on: true, content: '★ {title}', color: '#fde68a' } },
+];
+function playVfx(name, nodeId, ctx = {}, force) {
+  if (!force && !settings.fx) return;
+  const e = (state.vfx || []).find(v => v.name === name); if (!e) return;
+  const r = viewport.getBoundingClientRect(), n = state.nodes[nodeId], k = state.view.k;
+  const cx = n ? (n.x + NW / 2) * k + state.view.x : r.width / 2, cy = n ? (n.y + NH / 2) * k + state.view.y : r.height / 2;
+  let L = $('fxLayer'); if (!L) { L = document.createElement('div'); L.id = 'fxLayer'; L.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:30'; viewport.appendChild(L); }
+  const mk = (css, txt) => { const d = document.createElement('div'); d.style.cssText = 'position:absolute;left:0;top:0;will-change:transform,opacity;white-space:nowrap;' + css; if (txt !== undefined) d.textContent = txt; L.appendChild(d); return d; };
+  const go = (d, frames, ms, ease = 'ease-out') => { const a = d.animate(frames, { duration: Math.max(50, +ms || 500), easing: ease, fill: 'forwards' }); a.onfinish = () => d.remove(); };
+  const num = (v, dflt) => (Number.isFinite(+v) ? +v : dflt);
+  const P = e.particles;
+  if (P.on) for (let i = 0, N = Math.min(300, num(P.count, 20)); i < N; i++) {
+    const ang = P.spread >= 360 ? Math.random() * 2 * Math.PI : -Math.PI / 2 + (Math.random() - 0.5) * P.spread * Math.PI / 180;
+    const v = num(P.speed, 200) * (0.5 + Math.random() * 0.5), t = num(P.life, 900) / 1000, g = num(P.gravity, 0);
+    const at = f => `translate(${cx + Math.cos(ang) * v * t * f}px, ${cy + Math.sin(ang) * v * t * f + 0.5 * g * (t * f) ** 2}px)`;
+    go(mk(`font-size:${num(P.size, 18)}px;color:${P.color}`, P.shape), [{ transform: at(0) + ' scale(1)', opacity: 1 }, { transform: at(0.6) + ' scale(1)', opacity: 1, offset: 0.6 }, { transform: at(1) + ' scale(.3)', opacity: 0 }], num(P.life, 900), 'linear');
+  }
+  const T = e.text;
+  if (T.on) { const txt = String(T.content).replace('{gain}', ctx.gain ?? '').replace('{title}', n ? n.title : ''), rise = num(T.rise, 70);
+    go(mk(`font:700 ${num(T.size, 22)}px system-ui;color:${T.color};text-shadow:0 2px 6px #000`, txt), [{ transform: `translate(calc(${cx}px - 50%), ${cy}px)`, opacity: 1 }, { transform: `translate(calc(${cx}px - 50%), ${cy - rise}px)`, opacity: 0 }], num(T.life, 1200)); }
+  const R = e.ripple;
+  if (R.on) { const sz = num(R.size, 260); go(mk(`width:${sz}px;height:${sz}px;border:3px solid ${R.color};border-radius:50%;box-shadow:0 0 24px ${R.color},inset 0 0 24px ${R.color}`), [{ transform: `translate(${cx - sz / 2}px, ${cy - sz / 2}px) scale(.05)`, opacity: 0.95 }, { transform: `translate(${cx - sz / 2}px, ${cy - sz / 2}px) scale(1)`, opacity: 0 }], num(R.ms, 700)); }
+  const F = e.flash;
+  if (F.on) go(mk(`width:100%;height:100%;background:${F.color}`), [{ opacity: 0.45 }, { opacity: 0 }], num(F.ms, 350));
+  const S = e.shake;
+  if (S.on) { const pw = num(S.power, 8), fr = []; for (let i = 0; i < 12; i++) { const f = 1 - i / 12; fr.push({ transform: `translate(${(Math.random() - 0.5) * 2 * pw * f}px, ${(Math.random() - 0.5) * 2 * pw * f}px)` }); } fr.push({ transform: 'translate(0,0)' }); viewport.animate(fr, { duration: num(S.ms, 400) }); }
+}
+const fxNode = (n, ctx) => { if (n && n.vfx) playVfx(n.vfx, n.id, ctx || {}); };
+let vfxSel = 0;
+const VFX_FIELDS = {
+  particles: ['Particle burst', [['shape', 'text', 'Emoji / text'], ['color', 'color'], ['count', 'num', 'Count'], ['size', 'num', 'Size px'], ['speed', 'num', 'Speed'], ['spread', 'num', 'Spread ° (360 = all)'], ['gravity', 'num', 'Gravity'], ['life', 'num', 'Life ms']]],
+  text: ['Floating text', [['content', 'text', 'Text ({gain}, {title})'], ['color', 'color'], ['size', 'num', 'Size px'], ['rise', 'num', 'Rise px'], ['life', 'num', 'Life ms']]],
+  shake: ['Screen shake', [['power', 'num', 'Power px'], ['ms', 'num', 'Duration ms']]],
+  ripple: ['Glow ripple', [['color', 'color'], ['size', 'num', 'Size px'], ['ms', 'num', 'Duration ms']]],
+  flash: ['Screen flash', [['color', 'color'], ['ms', 'num', 'Duration ms']]],
+};
+function renderVfx() {
+  const list = state.vfx || (state.vfx = []); vfxSel = Math.min(vfxSel, list.length - 1); const e = list[vfxSel];
+  let h = `<div class="hint mb-2">Design effects, test them, then pick one per node (Inspector → “Trigger VFX”). They play when that node is bought, completed or rebirthed.</div>
+    <div class="row mb-2"><select class="inp" data-vfa-sel>${list.map((v, i) => `<option value="${i}" ${i === vfxSel ? 'selected' : ''}>${esc(v.name)}</option>`).join('') || '<option>(none yet)</option>'}</select></div>
+    <div class="row mb-2"><button class="btn small" data-vfa="new">＋ New</button><button class="btn small" data-vfa="presets">＋ Presets</button><button class="btn small" data-vfa="dup">Duplicate</button><button class="btn small" data-vfa="del">Delete</button></div>`;
+  if (e) {
+    h += `<label class="lbl">Name</label><input class="inp mb-2" data-vf="name" value="${esc(e.name)}"><div class="row mb-2"><button class="btn primary small" data-vfa="test">▶ Test (at selected node)</button><button class="btn small" data-vfa="testc">▶ Test (centre)</button></div>`;
+    for (const [g, [title, fields]] of Object.entries(VFX_FIELDS)) {
+      h += `<div class="vfx-grp"><label class="flex items-center gap-2 text-sm text-slate-200 mb-1"><input type="checkbox" data-vf="${g}.on" ${e[g].on ? 'checked' : ''}> <b>${title}</b></label>`
+        + fields.map(([k, t, lab]) => `<div class="row mb-1">${lab ? `<span class="hint" style="width:128px">${lab}</span>` : ''}<input class="inp" ${t === 'color' ? 'type="color" style="width:44px;padding:1px"' : t === 'num' ? 'type="number"' : ''} data-vf="${g}.${k}" value="${esc(e[g][k])}"></div>`).join('') + '</div>';
+    }
+  }
+  $('tab-vfx').innerHTML = h;
+}
+function simError(where, e) { console.error(e); const m = where + ': ' + e.message; if (sim.lastErr !== m) { sim.lastErr = m; toast('Simulation error (' + m + ')', 'error'); } }
+function tickBoards(dt) {
+  for (const n of Object.values(state.nodes)) {
+    if (n.type !== 'board' || !boardUnlocked(n)) continue;
+    const d = n.board, b = boardState(n), cur = d.source ? findCurrency(d.source) : null; if (!cur) continue;
+    const consume = d.fill !== 'income', max = d.maxLevel > 0 ? d.maxLevel : Infinity;
+    let amt = consume ? Math.max(0, sim.balances[cur.name] || 0) : Math.max(0, (sim.rates[cur.name] || 0) * dt), used = 0, guard = 0;
+    const base = baseVars();
+    while (amt > 0 && b.level < max && guard++ < 1000) {
+      const need = evalFormula(d.req, nodeVars(base, n, b.level)); if (!(need > 0) || !Number.isFinite(need)) break;
+      const space = need - b.progress;
+      if (amt >= space) { amt -= space; used += space; b.progress = 0; b.level++; } else { b.progress += amt; used += amt; amt = 0; }
+    }
+    if (consume) sim.balances[cur.name] -= used;
+  }
+}
+function boardInspector(n) {
+  const d = n.board, err = formulaError(d.req);
+  return `<label class="lbl">Board — fills from currency</label>
+    <input class="inp" list="dl-cur" placeholder="Currency (blank = no bar)" data-field="boardSource" value="${esc(d.source)}">
+    <select class="inp mt-1" data-field="boardFill"><option value="consume" ${d.fill !== 'income' ? 'selected' : ''}>Spend the currency into the bar</option><option value="income" ${d.fill === 'income' ? 'selected' : ''}>Track income (don't spend it)</option></select>
+    <label class="lbl">Needed for next level (formula)</label>
+    <input class="inp font-mono" data-field="boardReq" value="${esc(d.req)}">
+    ${d.source && !findCurrency(d.source) ? `<div class="warn">⚠ No currency named “${esc(d.source)}” — the bar can't fill.</div>` : ''}
+    ${err ? `<div class="warn">⚠ ${esc(err)}</div>` : '<div class="hint">Use <code>level</code>, e.g. <code>100*1.5^level</code></div>'}
+    <div class="row mt-2"><div style="flex:1"><label class="lbl" style="margin:0 0 3px">Start level</label><input class="inp" data-field="boardStart" value="${d.startLevel}"></div>
+      <div style="flex:1"><label class="lbl" style="margin:0 0 3px">Max level (0 = ∞)</label><input class="inp" data-field="boardMax" value="${d.maxLevel}"></div></div>
+    <label class="lbl">Stat lines: label · formula · prefix · unit</label>
+    ${d.lines.map((l, i) => { const er = formulaError(l.formula); return `<div class="row"><input class="inp" style="width:78px" placeholder="Label" data-field="lineLabel" data-i="${i}" value="${esc(l.label)}"><input class="inp font-mono" placeholder="2^level" data-field="lineFormula" data-i="${i}" value="${esc(l.formula)}"><input class="inp" style="width:34px" placeholder="x" data-field="linePrefix" data-i="${i}" value="${esc(l.prefix)}"><input class="inp" style="width:62px" placeholder="unit" data-field="lineSuffix" data-i="${i}" value="${esc(l.suffix)}"><button class="icon-btn" data-action="delLine" data-i="${i}">✕</button></div>${er ? `<div class="warn">⚠ ${esc(er)}</div>` : ''}`; }).join('')}
+    <button class="btn small" data-action="addLine">＋ Line</button>`;
+}
+
+function defaultNode(id, x, y) {
+  return {
+    id, title: 'New Upgrade', description: '', type: 'normal', x, y,
+    parents: [],            // ids of parent nodes (this node is a child of each)
+    requires: 'all',        // with several parents: 'all' must be owned, or 'any' one
+    costs: [{ currency: state.currencies[0] ? state.currencies[0].name : 'Points', amount: 10 }],
+    effects: [],            // [{ target, modifier }]
+    maxLevel: 5,            // repeatable only (0 = unlimited)
+    costGrowth: 1.5,        // repeatable only: cost multiplier per level owned
+    board: defaultBoard(),  // board type only
+    rebirth: defaultRebirth(),  // rebirth type only
+    retype: { ids: '', to: 'unlock' },   // when owned: change the type of matching nodes
+    blocks: { ids: '', until: '' },      // when owned: block buying matching nodes (until a node in `until` is owned)
+    color: '', tag: '', icon: '', vfx: '', cond: '', penalty: [], chReset: '',
+    disables: [],                        // when owned: [{ids, prop, val}] switch off properties of matching nodes
+    auto: { ids: 'U#', delay: 0 },       // automation types only
+  };
+}
+
+/* Cycle detection: adding parent -> child creates a cycle if `child` is already
+   an ancestor of `parent`. We walk UP from the parent through its own parents. */
+function wouldCycle(parentId, childId, nodes = state.nodes) {
+  if (parentId === childId) return true;
+  const seen = new Set(), stack = [parentId];
+  while (stack.length) {
+    const cur = stack.pop();
+    if (cur === childId) return true;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    const nd = nodes[cur];
+    if (nd) for (const p of nd.parents) stack.push(p);
+  }
+  return false;
+}
+
+/* ----- Export: state -> clean JSON object ----- */
+function exportData() {
+  return {
+    format: 'upgrade-tree-designer', version: 1,
+    currencies: state.currencies.map(c => ({ name: c.name, start: c.start, rate: c.rate })),
+    globals: (state.globals || []).map(g => ({ name: g.name, value: g.value })),
+    vfx: (state.vfx || []).map(v => JSON.parse(JSON.stringify(v))),
+    nodes: Object.values(state.nodes).map(n => {
+      const costs = {};
+      n.costs.forEach(c => { if (c.currency) costs[c.currency] = (costs[c.currency] || 0) + c.amount; });
+      const o = {
+        id: n.id, title: n.title, description: n.description, type: n.type,
+        x: Math.round(n.x), y: Math.round(n.y),
+        parents: [...n.parents], requires: n.requires,
+        costs, effects: n.effects.map(e => ({ target: e.target, modifier: e.modifier })),
+      };
+      if (n.type === 'repeatable') { o.maxLevel = n.maxLevel; o.costGrowth = n.costGrowth; }
+      if (n.type === 'board') o.board = JSON.parse(JSON.stringify(n.board));
+      if (n.type === 'rebirth') o.rebirth = { ...n.rebirth };
+      if (n.retype && n.retype.ids.trim()) o.retype = { ...n.retype };
+      if (n.blocks && n.blocks.ids.trim()) o.blocks = { ...n.blocks };
+      if (n.color) o.color = n.color; if (n.tag) o.tag = n.tag; if (n.icon) o.icon = n.icon; if (n.vfx) o.vfx = n.vfx;
+      if (n.cond) o.cond = n.cond; if (n.chReset) o.chReset = n.chReset; if (n.penalty && n.penalty.length) o.penalty = n.penalty.map(e => ({ ...e }));
+      if (n.disables && n.disables.length) o.disables = n.disables.map(d => ({ ...d }));
+      if (n.type === 'auto' || n.type === 'autoperm') o.auto = { ...n.auto };
+      return o;
+    }),
+  };
+}
+
+/* ----- Import: tolerant parser. Returns { nodes, currencies, warnings } or throws. ----- */
+function parseTree(data) {
+  const warnings = [];
+  if (typeof data !== 'object' || data === null) throw new Error('JSON root must be an object or an array.');
+  let raw = Array.isArray(data) ? data : data.nodes;
+  if (raw && !Array.isArray(raw) && typeof raw === 'object')       // allow { "U1": {...} } form
+    raw = Object.entries(raw).map(([id, v]) => ({ ...(v || {}), id: (v && v.id) || id }));
+  if (!Array.isArray(raw)) throw new Error('Expected a "nodes" array (or an object keyed by id).');
+
+  const nodes = {}, rawById = {};
+  raw.forEach((r, idx) => {
+    if (!r || typeof r !== 'object') { warnings.push(`Entry #${idx + 1} is not an object — skipped.`); return; }
+    const id = String(r.id ?? r.name ?? '').trim();
+    if (!id) { warnings.push(`Entry #${idx + 1} has no id — skipped.`); return; }
+    if (nodes[id]) { warnings.push(`Duplicate id "${id}" — later one skipped.`); return; }
+    if (r.type && !TYPES[r.type]) warnings.push(`Node "${id}": unknown type "${r.type}", using "normal".`);
+    nodes[id] = {
+      id, title: String(r.title ?? id), description: String(r.description ?? ''),
+      type: TYPES[r.type] ? r.type : 'normal',
+      x: numOr(r.x, (idx % 5) * 260), y: numOr(r.y, Math.floor(idx / 5) * 170),   // fallback auto-layout
+      parents: [], requires: r.requires === 'any' ? 'any' : 'all',
+      costs: parseCosts(r.costs), effects: parseEffects(r.effects),
+      maxLevel: Math.max(0, Math.floor(numOr(r.maxLevel, 5))), costGrowth: Math.max(0, numOr(r.costGrowth, 1.5)), board: normBoard(r.board), rebirth: normRebirth(r.rebirth), retype: normRetype(r.retype), blocks: normBlocks(r.blocks), color: /^#[0-9a-f]{6}$/i.test(r.color || '') ? r.color : '', tag: String(r.tag ?? ''), icon: String(r.icon ?? ''), vfx: String(r.vfx ?? ''), cond: String(r.cond ?? ''), chReset: String(r.chReset ?? ''),
+      penalty: Array.isArray(r.penalty) ? r.penalty.filter(e => e && typeof e === 'object').map(e => ({ target: String(e.target ?? ''), modifier: String(e.modifier ?? '') })) : [], disables: normDisables(r.disables), auto: normAuto(r.auto),
+    };
+    rawById[id] = r;
+  });
+
+  // Parents are linked after every node exists, validating each link.
+  for (const id in nodes) {
+    const r = rawById[id];
+    let ps = r.parents ?? r.parent ?? r.parentId ?? [];
+    ps = (Array.isArray(ps) ? ps : [ps]).map(p => String(p).trim()).filter(Boolean);
+    for (const p of ps) {
+      if (p === id) { warnings.push(`Node "${id}" listed itself as parent — ignored.`); continue; }
+      if (!nodes[p]) { warnings.push(`Node "${id}": parent "${p}" does not exist — ignored.`); continue; }
+      if (nodes[id].parents.includes(p)) continue;
+      if (wouldCycle(p, id, nodes)) { warnings.push(`Link ${p} → ${id} would create a cycle — removed.`); continue; }
+      nodes[id].parents.push(p);
+    }
+  }
+
+  // Currencies
+  let currencies = [];
+  const rc = Array.isArray(data) ? null : data.currencies;
+  if (Array.isArray(rc)) currencies = rc.map(c => typeof c === 'string' ? { name: c, start: 0, rate: 0 }
+      : { name: String(c?.name ?? '').trim(), start: parseAmount(c?.start, 0), rate: parseAmount(c?.rate, 0) });
+  else if (rc && typeof rc === 'object') currencies = Object.entries(rc).map(([name, c]) => ({ name, start: parseAmount(c?.start, 0), rate: parseAmount(c?.rate, 0) }));
+  const seen = new Set();
+  currencies = currencies.filter(c => { const k = normName(c.name); if (!c.name || seen.has(k)) return false; seen.add(k); return true; });
+  const globals = (!Array.isArray(data) && Array.isArray(data.globals) ? data.globals : []).filter(g => g && g.name).map(g => ({ name: String(g.name), value: String(g.value ?? '0') }));
+  const vfx = (!Array.isArray(data) && Array.isArray(data.vfx) ? data.vfx : []).filter(v => v && v.name).map(normVfx);
+  return { nodes, currencies, globals, vfx, warnings };
+}
+function parseCosts(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean).map(c => ({ currency: String(c.currency ?? c.name ?? '').trim(), amount: parseAmount(c.amount ?? c.value ?? c.cost, 0) })).filter(c => c.currency);
+  if (typeof raw === 'object') return Object.entries(raw).map(([currency, amount]) => ({ currency, amount: parseAmount(amount, 0) }));
+  return [];
+}
+function parseEffects(raw) {
+  if (!raw) return [];
+  if (typeof raw === 'string') return [{ target: '', modifier: raw }];
+  if (Array.isArray(raw)) return raw.filter(e => e !== null && e !== undefined).map(e => typeof e === 'string'
+      ? { target: '', modifier: e } : { target: String(e.target ?? e.key ?? ''), modifier: String(e.modifier ?? e.value ?? e.mod ?? '') });
+  if (typeof raw === 'object') return Object.entries(raw).map(([target, modifier]) => ({ target, modifier: String(modifier) }));
+  return [];
+}
+
+/* Replace the whole tree (used by import, example, undo). */
+function applyTree(t, { fit = true } = {}) {
+  Object.values(els).forEach(e => e.remove());
+  for (const k in els) delete els[k];
+  state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || [];
+  state.selected = null; state.selectedEdge = null; state.connectFrom = null;
+  if (sim.active) resetSim();
+  fullRender(); if (fit) fitView(); save();
+}
+
+const EXAMPLE = {
+  currencies: [{ name: 'Points', start: 10, rate: 1 }, { name: 'Rebirth Points', start: 0, rate: 0 }, { name: 'Zombies', start: 0, rate: 0 }],
+  nodes: [
+    { id: 'U1', title: 'Basic Generator', description: 'Starts your engine.', type: 'normal', x: 60, y: 160, parents: [], costs: { Points: 10 }, effects: [{ target: 'Points', modifier: '+1/s' }] },
+    { id: 'U2', title: 'Double Points', description: 'Doubles all point gain.', type: 'normal', x: 360, y: 40, parents: ['U1'], costs: { Points: 50 }, effects: [{ target: 'Points', modifier: 'x2' }] },
+    { id: 'U3', title: 'Zombie Swarm', description: 'Summons zombies over time.', type: 'normal', x: 360, y: 280, parents: ['U1'], costs: { Points: 100 }, effects: [{ target: 'Zombies', modifier: '+1/s' }] },
+    { id: 'U4', title: 'Efficiency', description: 'Each level boosts points by 25%.', type: 'repeatable', x: 660, y: -20, parents: ['U2'], costs: { Points: 200 }, maxLevel: 5, costGrowth: 1.6, effects: [{ target: 'Points', modifier: 'x1.25' }] },
+    { id: 'U5', title: 'First Rebirth', description: 'Major milestone. Needs both branches.', type: 'milestone', x: 660, y: 180, parents: ['U2', 'U3'], requires: 'all', costs: { Points: 1000, Zombies: 25 }, effects: [{ target: 'Rebirth Points', modifier: '+1/s' }] },
+    { id: 'U6', title: 'Auto-Buyer', description: 'Permanent unlock that survives rebirth.', type: 'unlock', x: 960, y: 180, parents: ['U5'], costs: { 'Rebirth Points': 5 }, effects: [{ target: '', modifier: 'Unlocks auto-buy' }] },
+  ],
+};
+
+/* ---------- 4. UNDO / REDO + AUTOSAVE ---------- */
+const undoStack = [], redoStack = [];
+let lastUndoKey = null, lastUndoTime = 0;
+const snapshot = () => JSON.stringify({ nodes: state.nodes, currencies: state.currencies, globals: state.globals || [], vfx: state.vfx || [] });
+
+/* Call BEFORE mutating. `key` coalesces rapid edits of the same field (typing) into one undo step. */
+function pushUndo(key) {
+  const now = Date.now();
+  if (key && key === lastUndoKey && now - lastUndoTime < 1000) { lastUndoTime = now; return; }
+  lastUndoKey = key || null; lastUndoTime = now;
+  undoStack.push(snapshot()); if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0; updateUndoButtons();
+}
+function restore(str) {
+  const o = JSON.parse(str);
+  Object.values(els).forEach(e => e.remove()); for (const k in els) delete els[k];
+  state.nodes = o.nodes; state.currencies = o.currencies; state.globals = o.globals || []; state.vfx = o.vfx || [];
+  if (!state.nodes[state.selected]) state.selected = null;
+  state.selectedEdge = null; state.connectFrom = null;
+  fullRender(); save();
+}
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); lastUndoKey = null; updateUndoButtons(); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); lastUndoKey = null; updateUndoButtons(); }
+function updateUndoButtons() { $('btnUndo').disabled = !undoStack.length; $('btnRedo').disabled = !redoStack.length; }
+
+let saveTimer = 0;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { if (settings.autosave) localStorage.setItem(STORAGE_KEY, JSON.stringify(exportData())); } catch (e) { /* storage may be blocked */ } }, 300);
+}
+function loadSaved() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY); if (!s) return false;
+    const t = parseTree(JSON.parse(s));
+    state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; return true;
+  } catch (e) { return false; }
+}
+
+/* ---------- 5. RENDERING ---------- */
+function applyView() {
+  const v = state.view;
+  world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.k})`;
+  const minor = GRID * v.k, major = GRID * 5 * v.k;               // grid follows pan/zoom
+  viewport.style.setProperty('--minor-a', minor >= 7 ? '.07' : '0');
+  viewport.style.backgroundSize = `${minor}px ${minor}px, ${minor}px ${minor}px, ${major}px ${major}px, ${major}px ${major}px`;
+  const pos = `${v.x}px ${v.y}px`;
+  viewport.style.backgroundPosition = `${pos}, ${pos}, ${pos}, ${pos}`;
+  updateStatus();
+}
+function updateStatus() {
+  $('status').textContent = `${Object.keys(state.nodes).length} nodes · ${edgeCount()} links · ${Math.round(state.view.k * 100)}%`;
+  $('zReset').textContent = Math.round(state.view.k * 100) + '%';
+}
+function edgeCount() { return Object.values(state.nodes).reduce((s, n) => s + n.parents.length, 0); }
+
+function zoomAt(mx, my, nk) {                                       // keep the world point under (mx,my) fixed
+  const v = state.view; nk = clamp(nk, 0.15, 2.5);
+  const wx = (mx - v.x) / v.k, wy = (my - v.y) / v.k;
+  v.k = nk; v.x = mx - wx * nk; v.y = my - wy * nk; applyView();
+}
+function fitView() {
+  const r = viewport.getBoundingClientRect(); const list = Object.values(state.nodes);
+  if (!r.width || !r.height) return;
+  if (!list.length) { state.view = { x: r.width / 2, y: r.height / 2, k: 1 }; applyView(); return; }
+  const minX = Math.min(...list.map(n => n.x)), maxX = Math.max(...list.map(n => n.x + NW));
+  const minY = Math.min(...list.map(n => n.y)), maxY = Math.max(...list.map(n => n.y + NH));
+  const bw = maxX - minX, bh = maxY - minY, pad = 90;
+  const k = clamp(Math.min((r.width - pad * 2) / bw, (r.height - pad * 2) / bh, 1.2), 0.15, 2.5);
+  state.view = { k, x: (r.width - bw * k) / 2 - minX * k, y: (r.height - bh * k) / 2 - minY * k };
+  applyView();
+}
+
+/* ----- Nodes ----- */
+function nodeInner(n, s) {
+  if (sim.active && settings.locked === 'mystery' && s.status === 'locked') return `<div class="n-head"><span class="n-icon">?</span><span class="n-title">???</span><span class="n-badge">LOCKED</span></div>`;
+  if (n.type === 'board') return boardNodeInner(n);
+  const t = TYPES[n.type];
+  const costs = sim.active ? costsAt(n, s.level) : n.costs.filter(c => c.currency).map(c => ({ currency: c.currency, amount: c.amount }));
+  const done = sim.active && (s.status === 'owned' || s.status === 'maxed');
+  const chips = costs.map(c => {
+    const cls = sim.active && !done ? (balanceOf(c.currency) >= c.amount ? ' ok' : ' bad') : '';
+    return `<span class="chip${cls}">${esc(c.currency)} ${fmt(c.amount)}</span>`;
+  }).join('') || '<span class="chip dim">Free</span>';
+  let fx = n.effects.filter(e => e.modifier || e.target).map(e => esc(`${e.modifier || ''} ${e.target || ''}`.trim())).join(' · ');
+  let badge = '';
+  if (sim.active) {
+    if (s.status === 'locked') badge = 'LOCKED';
+    else if (s.status === 'owned') badge = 'OWNED';
+    else if (s.status === 'maxed') badge = 'MAXED';
+    else if (n.type === 'challenge' && sim.challenge === n.id) badge = 'ACTIVE';
+    else if (n.type === 'rebirth') badge = `×${s.level}`;
+    else if (n.type === 'repeatable') badge = `Lv ${s.level}/${s.max === Infinity ? '∞' : s.max}`;
+  } else if (!n.parents.length) badge = 'ROOT';
+  if (n.type === 'rebirth') { const g = rebirthGain(n); fx = esc(`+${fmt(g.amount)} ${g.cur ? g.cur.name : '?'}`); }
+  if ((n.type === 'achievement' || n.type === 'challenge') && s.level < 1) fx = esc('Goal: ' + n.cond);
+  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
+          <div class="n-id">${esc(n.id)} · ${t.label}${n.tag ? ` · <span style="color:var(--c)">#${esc(n.tag)}</span>` : ''}</div>
+          <div class="n-desc">${esc(n.description)}</div>
+          <div class="n-costs">${chips}</div>
+          <div class="n-fx">${fx}</div>`;
+}
+/* Update one node's DOM. With force=false it skips work when nothing visible changed (used by the sim tick). */
+function updateNodeEl(n, force) {
+  let e = els[n.id];
+  if (!e) { e = document.createElement('div'); e.dataset.id = n.id; nodesLayer.appendChild(e); els[n.id] = e; force = true; }
+  const s = statusInfo(n);
+  const sig = `${s.status}|${s.level}|${s.bits}|${state.selected === n.id}|${state.connectFrom === n.id}|${multi.has(n.id)}`;
+  if (!force && e._sig === sig) return;
+  e._sig = sig;
+  e.style.transform = `translate(${n.x}px, ${n.y}px)`;
+  if (n.color) e.style.setProperty('--c', n.color); else e.style.removeProperty('--c');
+  e.className = `node type-${n.type} st-${s.status}` + (s.affordable ? ' can-buy' : '') + searchClass(n) + (multi.has(n.id) ? ' multi-sel' : '') +
+                (state.selected === n.id ? ' selected' : '') + (state.connectFrom === n.id ? ' connect-src' : '');
+  const veiled = sim.active && s.status === 'locked' && settings.locked !== 'show';
+  e.title = veiled ? '' : (n.description || n.title);
+  e.style.display = veiled && settings.locked === 'hide' ? 'none' : '';
+  e.innerHTML = nodeInner(n, s);
+}
+function renderNodes() {
+  for (const id in els) if (!state.nodes[id]) { els[id].remove(); delete els[id]; }
+  Object.values(state.nodes).forEach(n => updateNodeEl(n, true));
+}
+
+/* ----- Edges: cubic bezier from the facing side of the parent to the facing side of the child ----- */
+function edgePath(a, b) {
+  const ac = { x: a.x + NW / 2, y: a.y + NH / 2 }, bc = { x: b.x + NW / 2, y: b.y + NH / 2 };
+  const dx = bc.x - ac.x, dy = bc.y - ac.y;
+  let p1, p2, c1, c2;
+  if (Math.abs(dx) * 0.6 >= Math.abs(dy)) {                         // mostly horizontal
+    const s = dx >= 0 ? 1 : -1;
+    p1 = { x: ac.x + s * NW / 2, y: ac.y }; p2 = { x: bc.x - s * NW / 2, y: bc.y };
+    const off = Math.max(40, Math.abs(p2.x - p1.x) * 0.5);
+    c1 = { x: p1.x + s * off, y: p1.y }; c2 = { x: p2.x - s * off, y: p2.y };
+  } else {                                                          // mostly vertical
+    const s = dy >= 0 ? 1 : -1;
+    p1 = { x: ac.x, y: ac.y + s * NH / 2 }; p2 = { x: bc.x, y: bc.y - s * NH / 2 };
+    const off = Math.max(40, Math.abs(p2.y - p1.y) * 0.5);
+    c1 = { x: p1.x, y: p1.y + s * off }; c2 = { x: p2.x, y: p2.y - s * off };
+  }
+  if (settings.lineShape === 'straight') return `M${p1.x} ${p1.y} L${p2.x} ${p2.y}`;
+  if (settings.lineShape === 'step') {
+    const horiz = Math.abs(dx) * 0.6 >= Math.abs(dy);
+    return horiz ? `M${p1.x} ${p1.y} H${(p1.x + p2.x) / 2} V${p2.y} H${p2.x}` : `M${p1.x} ${p1.y} V${(p1.y + p2.y) / 2} H${p2.x} V${p2.y}`;
+  }
+  return `M${p1.x} ${p1.y} C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
+}
+const edgeFx = pid => settings.lineFx === 'neon' ? ' neon' : (settings.lineFx === 'flow' && sim.active && isOwnedId(pid) ? ' flow' : '');
+function renderEdges() {
+  edgeList = []; let html = '';
+  for (const n of Object.values(state.nodes)) for (const pid of n.parents) {
+    const a = state.nodes[pid]; if (!a) continue;
+    if (nodeHidden(n) || nodeHidden(a)) continue;
+    const i = edgeList.push({ from: pid, to: n.id }) - 1;
+    const d = edgePath(a, n);
+    const sel = state.selectedEdge && state.selectedEdge.from === pid && state.selectedEdge.to === n.id;
+    const hi = state.selected === pid || state.selected === n.id;
+    let stroke = '#64748b', marker = 'arr-norm', dash = '';
+    if (sim.active) { const on = isOwnedId(pid); stroke = on ? '#7dd3fc' : '#3b4658'; marker = on ? 'arr-on' : 'arr-dim'; if (!on) dash = '6 6'; }
+    if (hi) { stroke = '#e2e8f0'; marker = 'arr-hi'; }
+    if (sel) { stroke = '#f472b6'; marker = 'arr-sel'; dash = ''; }
+    html += `<path class="edge-hit" data-ei="${i}" d="${d}"></path>` +
+            `<path class="edge${edgeFx(pid)}" d="${d}" stroke="${stroke}" marker-end="url(#${marker})"${dash ? ` stroke-dasharray="${dash}"` : ''}></path>`;
+  }
+  edgeG.innerHTML = html; updateStatus();
+}
+let edgeRaf = 0;
+function scheduleEdges() { if (edgeRaf) return; edgeRaf = requestAnimationFrame(() => { edgeRaf = 0; renderEdges(); }); }
+function updateRubber() {
+  const from = state.nodes[state.connectFrom];
+  if (!from) { rubber.setAttribute('d', ''); return; }
+  rubber.setAttribute('d', `M${from.x + NW / 2} ${from.y + NH / 2} L${mouseWorld.x} ${mouseWorld.y}`);
+}
+
+/* ----- Side panel: Inspector ----- */
+function renderDatalist() { $('dl-cur').innerHTML = state.currencies.map(c => `<option value="${esc(c.name)}">`).join(''); }
+
+function renderInspector() {
+  const box = $('tab-inspector'); const n = state.nodes[state.selected];
+  if (!n) {
+    box.innerHTML = `<p class="hint">Select a node to edit it, or create one.</p>
+      <div class="flex gap-2 flex-wrap mt-3"><button class="btn primary" data-action="addNode">＋ Add Node</button>
+      <button class="btn" data-action="loadExample">Load example tree</button></div>
+      ${state.selectedEdge ? `<p class="hint mt-4">Connection <b>${esc(state.selectedEdge.from)} → ${esc(state.selectedEdge.to)}</b> selected.</p>
+      <button class="btn danger mt-2" data-action="delEdge">Delete connection</button>` : ''}`;
+    return;
+  }
+  const rep = n.type === 'repeatable', isBoard = n.type === 'board', isRb = n.type === 'rebirth';
+  const candidates = Object.keys(state.nodes).filter(i => i !== n.id && !n.parents.includes(i) && !wouldCycle(i, n.id)).sort(natCmp);
+  const children = Object.values(state.nodes).filter(o => o.parents.includes(n.id)).map(o => o.id).sort(natCmp);
+  const missing = [...new Set(n.costs.map(c => c.currency).filter(c => c && !findCurrency(c)))];
+  const chip = (id, removable) => `<span class="pchip"><span class="nm" data-action="goto" data-id="${esc(id)}">${esc(id)}</span>${removable ? `<button class="icon-btn" data-action="delParent" data-p="${esc(id)}" title="Remove link">×</button>` : ''}</span>`;
+
+  box.innerHTML = `
+    <label class="lbl" style="margin-top:0">ID / Unique Name</label>
+    <input class="inp" data-field="id" value="${esc(n.id)}">
+    <label class="lbl">Display Title</label>
+    <input class="inp" data-field="title" value="${esc(n.title)}">
+    <label class="lbl">Description</label>
+    <textarea class="inp" rows="3" data-field="description">${esc(n.description)}</textarea>
+
+    <label class="lbl">Node Type</label>
+    <select class="inp" data-field="type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${n.type === k ? 'selected' : ''}>${t.icon} ${t.label}</option>`).join('')}</select>
+    ${rep ? `<div class="row mt-2"><div style="flex:1"><label class="lbl" style="margin:0 0 3px">Max level (0 = ∞)</label><input class="inp" data-field="maxLevel" value="${n.maxLevel}"></div>
+      <div style="flex:1"><label class="lbl" style="margin:0 0 3px">Cost growth ×</label><input class="inp" data-field="costGrowth" value="${n.costGrowth}"></div></div>` : ''}
+
+    ${(n.type === 'achievement' || n.type === 'challenge') ? goalInspector(n) : ''}
+    ${styleInspector(n)}
+    ${isBoard ? boardInspector(n) : isRb ? rebirthInspector(n) : (n.type === 'auto' || n.type === 'autoperm') ? autoInspector(n) : ''}
+    <label class="lbl">Costs${isBoard ? ' (ignored — boards unlock via parents)' : isRb ? ' (requirement — not spent)' : ''}</label>
+    ${n.costs.map((c, i) => `<div class="row"><input class="inp" list="dl-cur" placeholder="Currency" data-field="costCurrency" data-i="${i}" value="${esc(c.currency)}">
+      <input class="inp" style="width:96px" placeholder="Amount" data-field="costAmount" data-i="${i}" value="${c.amount}">
+      <button class="icon-btn" data-action="delCost" data-i="${i}">✕</button></div>`).join('')}
+    ${missing.map(m => `<div class="warn">⚠ "${esc(m)}" isn't in the Currencies tab (auto-added when you simulate).</div>`).join('')}
+    <button class="btn small" data-action="addCost">＋ Cost</button>
+
+    <label class="lbl">Effects / Modifiers</label>
+    ${n.effects.map((e, i) => `<div class="row"><input class="inp" list="dl-cur" placeholder="Target" data-field="effTarget" data-i="${i}" value="${esc(e.target)}">
+      <input class="inp" style="width:110px" placeholder="x3, +1/s…" data-field="effMod" data-i="${i}" value="${esc(e.modifier)}">
+      <button class="icon-btn" data-action="delEffect" data-i="${i}">✕</button></div>`).join('')}
+    ${n.effects.map(e => { const p = parseEffect(e), er = p && p.formula ? formulaError(p.expr) : ''; return er ? `<div class="warn">⚠ ${esc(er)} (effect ignored)</div>` : ''; }).join('')}
+    <button class="btn small" data-action="addEffect">＋ Effect</button>
+    <div class="hint mt-1">Formulas work here: <code>log10(points)</code>, <code>x2^level</code>, <code>+sqrt(points)</code> (needs a Target). See Help.</div>
+    ${retypeInspector(n)}
+    ${blockInspector(n)}
+    ${disableInspector(n)}
+
+    <label class="lbl">Parents (required before this unlocks)</label>
+    <div>${n.parents.map(p => chip(p, true)).join('') || '<span class="hint">None — this is a root node.</span>'}</div>
+    <select class="inp mt-1" data-field="parentAdd"><option value="">＋ Add parent…</option>${candidates.map(c => `<option value="${esc(c)}">${esc(c)} — ${esc(state.nodes[c].title)}</option>`).join('')}</select>
+    ${n.parents.length > 1 ? `<label class="lbl">Unlock rule</label><select class="inp" data-field="requires">
+      <option value="all" ${n.requires === 'all' ? 'selected' : ''}>All parents must be owned</option>
+      <option value="any" ${n.requires === 'any' ? 'selected' : ''}>Any one parent is enough</option></select>` : ''}
+
+    <label class="lbl">Children</label>
+    <div>${children.map(c => chip(c, false)).join('') || '<span class="hint">None.</span>'}</div>
+
+    <label class="lbl">Position</label>
+    <div class="row"><input class="inp" data-field="x" value="${Math.round(n.x)}"><input class="inp" data-field="y" value="${Math.round(n.y)}"></div>
+
+    <div class="flex gap-2 flex-wrap mt-4">
+      <button class="btn" data-action="addChild">＋ Add child</button>
+      <button class="btn" data-action="dupNode">⧉ Duplicate</button>
+      <button class="btn danger" data-action="delNode">🗑 Delete</button>
+    </div>`;
+}
+function syncPosInputs(n) {
+  if (state.selected !== n.id) return;
+  const ix = document.querySelector('#tab-inspector [data-field="x"]'), iy = document.querySelector('#tab-inspector [data-field="y"]');
+  if (ix) ix.value = Math.round(n.x); if (iy) iy.value = Math.round(n.y);
+}
+
+/* ----- Side panel: Currency manager ----- */
+function renderCurrencies() {
+  $('tab-currencies').innerHTML = `<p class="hint">Global currencies for <b>Simulate Play</b>. <i>Rate</i> is production per second (e.g. <code>1</code>, <code>2.5K</code>, <code>1Qd</code>). Upgrades with matching effects boost these rates.</p>
+    <div class="mt-3">${state.currencies.map((c, i) => `<div class="card">
+      <div class="row"><input class="inp" data-cf="name" data-ci="${i}" value="${esc(c.name)}" placeholder="Name"><button class="icon-btn" data-caction="del" data-ci="${i}">🗑</button></div>
+      <div class="row" style="margin:0"><div style="flex:1"><div class="hint">Start</div><input class="inp" data-cf="start" data-ci="${i}" value="${c.start}"></div>
+      <div style="flex:1"><div class="hint">Rate /s</div><input class="inp" data-cf="rate" data-ci="${i}" value="${c.rate}"></div></div></div>`).join('')}</div>
+    <button class="btn" data-caction="add">＋ Add currency</button>`;
+  renderDatalist();
+}
+
+/* ----- Hint banner + toolbar state ----- */
+function updateHint() {
+  const h = $('hint'); let msg = '';
+  if (state.tool === 'connect') msg = state.connectFrom ? `Parent: ${state.connectFrom} — now click the CHILD node (Esc to stop)` : 'Connect mode: click the PARENT node first (Esc to stop)';
+  else if (state.selectedEdge) msg = `Link ${state.selectedEdge.from} → ${state.selectedEdge.to} selected — press Delete to remove`;
+  else if (sim.active) msg = 'Simulation: click an Available node to buy it';
+  h.textContent = msg; h.style.display = msg && settings.hint ? 'block' : 'none';
+  $('btnConnect').classList.toggle('active', state.tool === 'connect');
+  $('btnSim').classList.toggle('sim-on', sim.active);
+  $('btnSim').textContent = sim.active ? (settings.playMode ? '■ Stop' : '■ Stop Test') : (settings.playMode ? '▶ Play' : '▶ Test');
+  document.body.classList.toggle('playing', playLocked());
+  viewport.classList.toggle('tool-connect', state.tool === 'connect');
+  viewport.classList.toggle('viewport-sim', sim.active);
+}
+function fullRender() {
+  renderNodes(); renderEdges(); renderInspector(); renderCurrencies(); renderHud(); updateHint(); updateUndoButtons(); updateStatus();
+}
+function toast(msg, kind = 'info', ms = 3000) {
+  const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = msg; $('toasts').appendChild(d);
+  setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 300); }, ms);
+}
+function setTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  if (name === 'vars') renderVars();
+  if (name === 'vfx') renderVfx();
+  ['inspector', 'currencies', 'vars', 'vfx', 'settings', 'help'].forEach(t => $('tab-' + t).style.display = t === name ? '' : 'none');
+}
+
+/* ---------- 6. EDITING ACTIONS ---------- */
+function newId() { let i = 1; while (state.nodes['U' + i]) i++; return 'U' + i; }
+
+function select(id) {
+  if (multi.size) { const pm = [...multi]; multi = new Set(); pm.forEach(i => state.nodes[i] && updateNodeEl(state.nodes[i], true)); updateMultiLabel(); }
+  const prev = state.selected; state.selected = id || null; state.selectedEdge = null;
+  if (prev && state.nodes[prev]) updateNodeEl(state.nodes[prev], true);
+  if (id && state.nodes[id]) { updateNodeEl(state.nodes[id], true); setTab('inspector'); }
+  renderInspector(); renderEdges(); updateHint();
+}
+function selectEdge(i) {
+  const e = edgeList[i]; if (!e) return;
+  select(null); state.selectedEdge = { from: e.from, to: e.to };
+  renderInspector(); renderEdges(); updateHint(); setTab('inspector');
+}
+
+function addNode(opts = {}) {
+  pushUndo();
+  const id = newId(); let { x, y } = opts;
+  if (x === undefined) {                                           // default: centre of the visible workspace
+    const r = viewport.getBoundingClientRect(), v = state.view;
+    x = (r.width / 2 - v.x) / v.k - NW / 2; y = (r.height / 2 - v.y) / v.k - NH / 2;
+  }
+  if (state.snap) { x = snapv(x); y = snapv(y); }
+  while (Object.values(state.nodes).some(o => Math.abs(o.x - x) < NW * 0.5 && Math.abs(o.y - y) < NH * 0.5)) { x += GRID * 2; y += GRID * 2; }
+  const n = defaultNode(id, x, y); state.nodes[id] = n;
+  if (opts.parent && state.nodes[opts.parent] && !wouldCycle(opts.parent, id)) n.parents.push(opts.parent);
+  updateNodeEl(n, true); select(id); renderEdges(); save();
+  return n;
+}
+function addChildOf(pid) {
+  const p = state.nodes[pid]; if (!p) return;
+  const kids = Object.values(state.nodes).filter(o => o.parents.includes(pid)).length;
+  addNode({ x: p.x + NW + 80, y: p.y + kids * (NH + 30), parent: pid });
+}
+function duplicateNode(id) {
+  const o = state.nodes[id]; if (!o) return;
+  pushUndo(); const nid = newId();
+  const n = JSON.parse(JSON.stringify(o)); n.id = nid; n.title = o.title + ' (copy)'; n.x = o.x + 40; n.y = o.y + 40;
+  state.nodes[nid] = n; updateNodeEl(n, true); select(nid); renderEdges(); save();
+}
+function deleteNode(id) {
+  if (!state.nodes[id]) return;
+  pushUndo(); delete state.nodes[id];
+  for (const o of Object.values(state.nodes)) o.parents = o.parents.filter(p => p !== id);   // children become orphans/roots
+  delete sim.levels[id];
+  if (state.connectFrom === id) state.connectFrom = null;
+  if (state.selected === id) state.selected = null;
+  renderNodes(); renderEdges(); renderInspector(); updateHint(); updateRubber(); save();
+}
+function renameNode(oldId, raw) {
+  const nid = raw.trim();
+  if (!nid || nid === oldId) return false;
+  if (state.nodes[nid]) { toast(`ID "${nid}" is already used.`, 'error'); return false; }
+  pushUndo(); const n = state.nodes[oldId];
+  delete state.nodes[oldId]; n.id = nid; state.nodes[nid] = n;
+  for (const o of Object.values(state.nodes)) o.parents = o.parents.map(p => p === oldId ? nid : p);
+  if (sim.levels[oldId] !== undefined) { sim.levels[nid] = sim.levels[oldId]; delete sim.levels[oldId]; }
+  if (els[oldId]) { els[oldId].remove(); delete els[oldId]; }
+  if (state.selected === oldId) state.selected = nid;
+  if (state.connectFrom === oldId) state.connectFrom = nid;
+  renderNodes(); renderEdges(); renderInspector(); save();
+  return true;
+}
+function addEdge(parentId, childId) {
+  const child = state.nodes[childId];
+  if (!child || !state.nodes[parentId]) return false;
+  if (parentId === childId) { toast("A node can't be its own parent.", 'error'); return false; }
+  if (child.parents.includes(parentId)) { toast('Already connected.'); return false; }
+  if (wouldCycle(parentId, childId)) { toast(`Can't link ${parentId} → ${childId}: that would create a cycle.`, 'error'); return false; }
+  pushUndo(); child.parents.push(parentId);
+  updateNodeEl(child, true); renderEdges(); renderInspector(); save();
+  return true;
+}
+function removeEdge(parentId, childId) {
+  const child = state.nodes[childId]; if (!child) return;
+  pushUndo(); child.parents = child.parents.filter(p => p !== parentId);
+  if (state.selectedEdge && state.selectedEdge.from === parentId && state.selectedEdge.to === childId) state.selectedEdge = null;
+  updateNodeEl(child, true); renderEdges(); renderInspector(); updateHint(); save();
+}
+
+/* Connect tool: first click picks the parent, second click picks the child. */
+function setTool(t) {
+  state.tool = t; cancelConnect(false);
+  updateHint();
+}
+function cancelConnect(refresh = true) {
+  const prev = state.connectFrom; state.connectFrom = null; updateRubber();
+  if (refresh && prev && state.nodes[prev]) updateNodeEl(state.nodes[prev], true);
+  updateHint();
+}
+function handleConnectClick(id) {
+  if (!state.connectFrom) {
+    state.connectFrom = id; updateNodeEl(state.nodes[id], true); updateRubber(); updateHint(); return;
+  }
+  const from = state.connectFrom;
+  if (from === id) { cancelConnect(); return; }
+  if (state.nodes[id].parents.includes(from)) { removeEdge(from, id); toast('Connection removed.'); }
+  else addEdge(from, id);
+  cancelConnect();
+}
+
+function clearAll() {
+  pushUndo();
+  applyTree({ nodes: {}, currencies: state.currencies }, { fit: true });
+  toast('Cleared. Press Ctrl+Z to undo.');
+}
+
+/* Currency helpers */
+function findCurrency(name) { const k = normName(name); return state.currencies.find(c => normName(c.name) === k) || null; }
+function renameCurrency(i, raw) {
+  const c = state.currencies[i], nn = raw.trim(); if (!c || !nn || nn === c.name) return false;
+  if (state.currencies.some((o, j) => j !== i && normName(o.name) === normName(nn))) { toast('A currency with that name already exists.', 'error'); return false; }
+  pushUndo(); const old = c.name, ok = normName(old);
+  for (const n of Object.values(state.nodes)) {                    // keep references in sync
+    n.costs.forEach(x => { if (normName(x.currency) === ok) x.currency = nn; });
+    n.effects.forEach(x => { if (normName(x.target) === ok) x.target = nn; });
+    if (n.board && normName(n.board.source) === ok) n.board.source = nn;          // boards and rebirths follow renames too
+    if (n.rebirth && normName(n.rebirth.currency) === ok) n.rebirth.currency = nn;
+  }
+  if (sim.balances[old] !== undefined) { sim.balances[nn] = sim.balances[old]; delete sim.balances[old]; }
+  c.name = nn; renderNodes(); renderHud(); renderDatalist(); renderInspector(); save();
+  return true;
+}
+
+/* ---------- 7. SIMULATION ENGINE ---------- */
+const maxLevelOf = n => n.type === 'repeatable' ? (n.maxLevel > 0 ? Math.floor(n.maxLevel) : Infinity) : 1;
+
+function balanceOf(name) {
+  const c = findCurrency(name); if (!c) return 0;
+  if (sim.balances[c.name] === undefined) sim.balances[c.name] = c.start;
+  return sim.balances[c.name];
+}
+/* Cost of the NEXT level: base × growth^level (repeatables only), rounded up. */
+function costsAt(n, level) {
+  const g = n.type === 'repeatable' ? n.costGrowth : 1;
+  return n.costs.filter(c => c.currency).map(c => ({ currency: c.currency, amount: g !== 1 ? Math.ceil(c.amount * Math.pow(g, level)) : c.amount }));
+}
+/* status: 'design' (editing) | 'locked' | 'available' | 'owned' | 'maxed' */
+function statusInfo(n) {                                          // blocked nodes behave as locked; goals can't be bought
+  let s = statusInfoRaw(n);
+  if (s.status === 'available' && isBlocked(n)) s = { ...s, status: 'locked', affordable: false, bits: s.bits + '|blk' };
+  if (s.status === 'available' && n.type === 'achievement') s = { ...s, affordable: false };
+  if (s.status === 'available' && n.type === 'challenge') { const on = sim.challenge === n.id; s = { ...s, affordable: !on, bits: s.bits + (on ? '|act' : '') }; }
+  return s;
+}
+function statusInfoRaw(n) {
+  if (n.type === 'rebirth' && sim.active) {
+    const un = boardUnlocked(n), g = rebirthGain(n), met = costsAt(n, 0).map(c => balanceOf(c.currency) >= c.amount ? 1 : 0), ok = un && g.amount > 0 && met.every(Boolean);
+    return { status: un ? 'available' : 'locked', level: sim.levels[n.id] || 0, max: Infinity, affordable: ok, bits: `${ok ? 1 : 0}|${fmt(g.amount)}|${met.join('')}` };
+  }
+  if (n.type === 'board' && sim.active) {
+    const bv = boardView(n), ln = bv.unlocked ? boardLines(n, bv) : [];
+    return { status: bv.unlocked ? 'board' : 'locked', level: bv.level, max: 1, affordable: false, bits: `${bv.level}|${fmt(bv.progress)}|${fmt(bv.need)}|${ln[0] || ''}` };
+  }
+  const max = maxLevelOf(n);
+  if (!sim.active) return { status: 'design', level: 0, max, affordable: false, bits: '' };
+  const level = sim.levels[n.id] || 0;
+  const owned = isOwnedId;
+  const unlocked = !n.parents.length || (n.requires === 'any' ? n.parents.some(owned) : n.parents.every(owned));
+  let status;
+  if (level >= max) status = max === 1 ? 'owned' : 'maxed';
+  else if (!unlocked && level === 0) status = 'locked';
+  else status = 'available';
+  let affordable = false, bits = '';
+  if (status === 'available') {
+    const cs = costsAt(n, level);
+    bits = cs.map(c => balanceOf(c.currency) >= c.amount ? 1 : 0).join('');
+    affordable = cs.every(c => balanceOf(c.currency) >= c.amount);
+  }
+  return { status, level, max, affordable, bits };
+}
+/* Formula effects: "x2^level" / "*sqrt(points)" multiply, "+log10(points)" adds per second, a bare formula multiplies. Needs a Target. */
+function parseFormulaEffect(e, mod) {
+  const target = String(e.target || '').trim(); if (!mod || !target) return null;
+  let kind = 'mul', expr = mod;
+  if (/^[×*]/.test(mod) || /^x(?=[\d.(\s])/i.test(mod)) expr = mod.slice(1);
+  else if (mod[0] === '+') { kind = 'add'; expr = mod.slice(1).replace(/\/\s*s(ec)?\s*$/i, ''); }
+  else if (mod[0] === '^') { kind = 'pow'; expr = mod.slice(1); }     // "^0.5": raise the currency's production to a power
+  return { kind, target, expr: expr.trim(), formula: true };
+}
+/* "x3", "×3", "+1/s", "x3 Points", "+1 Rebirth Point/s" -> { kind, value, target } */
+function parseEffect(e) {
+  const mod = String(e.modifier || '').trim();
+  const m = mod.match(/^([x×*]|\+)\s*(\d*\.?\d+(?:e[+-]?\d+)?)\s*(\/\s*s(?:ec)?)?\s*(.*)$/i);
+  if (!m || /^[-+*\/^%(),]/.test(m[4].trim())) return parseFormulaEffect(e, mod);
+  let target = String(e.target || '').trim();
+  if (!target) target = m[4].replace(/\s*\/\s*s(?:ec)?$/i, '').trim();
+  const value = parseFloat(m[2]);
+  if (!target || !Number.isFinite(value)) return null;
+  return { kind: m[1] === '+' ? 'add' : 'mul', value, target };
+}
+/* rate = (base + Σ additive × level) × Π multiplier^level */
+function computeRates() {
+  const add = {}, mul = {}, pw = {};
+  state.currencies.forEach(c => { add[c.name] = 0; mul[c.name] = 1; pw[c.name] = 1; });
+  const base = baseVars();
+  for (const n of Object.values(state.nodes)) {
+    if (n.type === 'rebirth' || disabledOn(n, 'effects').length) continue;
+    const isB = n.type === 'board', lvl = isB ? (boardUnlocked(n) ? boardState(n).level : 0) : (sim.levels[n.id] || 0);
+    if (isB ? !boardUnlocked(n) : !lvl) continue;
+    let vars = null;
+    for (const e of n.effects) {
+      const p = parseEffect(e); if (!p) continue;
+      const c = findCurrency(p.target); if (!c) continue;
+      if (p.formula) {                                               // formulas are evaluated once (use `level` inside them)
+        const v = evalFormula(p.expr, vars || (vars = nodeVars(base, n, lvl)));
+        if (!Number.isFinite(v)) continue;
+        if (p.kind === 'mul') mul[c.name] *= v; else if (p.kind === 'pow') pw[c.name] *= v; else add[c.name] += v;
+      } else if (p.kind === 'mul') mul[c.name] *= Math.pow(p.value, lvl); else add[c.name] += p.value * lvl;
+    }
+  }
+  const cn = sim.challenge && state.nodes[sim.challenge];            // active challenge: apply its penalty
+  if (cn) for (const e of cn.penalty) {
+    const p = parseEffect(e); if (!p) continue; const c = findCurrency(p.target); if (!c) continue;
+    const v = p.formula ? evalFormula(p.expr, nodeVars(base, cn, 0)) : p.value; if (!Number.isFinite(v)) continue;
+    if (p.kind === 'pow') pw[c.name] *= v; else if (p.kind === 'mul') mul[c.name] *= v; else add[c.name] += v;
+  }
+  const r = {}; state.currencies.forEach(c => { let x = (c.rate + add[c.name]) * mul[c.name]; if (pw[c.name] !== 1) x = Math.pow(Math.max(x, 0), pw[c.name]); r[c.name] = x; });
+  sim.mults = mul;                                                 // total multiplier per currency (also applied to Rebirth gains)
+  return r;
+}
+function ensureSimCurrencies() {                                   // add currencies that nodes reference but don't exist yet
+  const names = [];
+  for (const n of Object.values(state.nodes)) {
+    n.costs.forEach(c => { if (c.currency) names.push(c.currency); });
+    if (n.type === 'rebirth' && n.rebirth.currency) names.push(n.rebirth.currency);
+    n.effects.forEach(e => { const p = parseEffect(e); if (p) names.push(p.target); });
+  }
+  let added = 0;
+  for (const nm of names) if (!findCurrency(nm)) { if (!added) pushUndo(); state.currencies.push({ name: nm.trim(), start: 0, rate: 0 }); added++; }
+  if (added) { toast(`Added ${added} missing currenc${added > 1 ? 'ies' : 'y'} to the Currency Manager.`); renderCurrencies(); save(); }
+}
+function resetSim() {
+  sim.levels = {}; sim.balances = {}; sim.boards = {}; sim.time = 0; sim.autoT = {}; sim.challenge = null;
+  state.currencies.forEach(c => { sim.balances[c.name] = c.start; });
+  sim.rates = computeRates();
+}
+function startSim() {
+  ensureSimCurrencies(); resetSim();
+  sim.active = true; sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.infinite = false; sim.speed = settings.playMode ? 1 : settings.speed;
+  sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10));
+  if (state.tool === 'connect') setTool('select');
+  fullRender();
+}
+function stopSim() { clearInterval(sim.timer); sim.timer = null; sim.active = false; fullRender(); }
+function simTick() {
+  const now = performance.now(), dt = Math.min((now - sim.last) / 1000, 1) * sim.speed; sim.last = now;
+  if (sim.running) {
+    sim.time += dt;
+    if (sim.infinite && settings.cheats && !settings.playMode) state.currencies.forEach(c => { if ((sim.balances[c.name] || 0) < 1e15) sim.balances[c.name] = 1e15; });
+    try { tickBoards(dt); } catch (e) { simError('board', e); }       // one failing stage must not freeze everything else
+    try { tickAuto(dt); } catch (e) { simError('automation', e); }
+    try { tickGoals(); } catch (e) { simError('goals', e); }
+    try { sim.rates = computeRates(); } catch (e) { simError('rates', e); }
+    state.currencies.forEach(c => { sim.balances[c.name] = (sim.balances[c.name] ?? c.start) + sim.rates[c.name] * dt; });
+  }
+  updateHud(); refreshSimNodes();
+  const vis = Object.values(state.nodes).map(n => (isOwnedId(n.id) ? 1 : 0) + (nodeHidden(n) ? 2 : 0)).join('');
+  if (vis !== sim.vis) { sim.vis = vis; renderEdges(); }
+  if ((sim.bt = (sim.bt || 0) + 1) % 5 === 0) updateDevBreak();            // keep link colours / hidden links in step with auto-buys & unlocks
+}
+function refreshSimNodes() { Object.values(state.nodes).forEach(n => updateNodeEl(n, false)); }
+
+function buyNode(id) {
+  const n = state.nodes[id]; if (!n) return;
+  if (isBlocked(n)) { toast('Blocked by another upgrade.', 'error'); return; }
+  if (n.type === 'achievement') { toast('Unlocks automatically when its goal is met.'); return; }
+  if (n.type === 'challenge') {
+    const st = statusInfo(n);
+    if (st.status === 'locked') toast('Locked — own the required parent upgrade first.');
+    else if (st.level > 0) toast('Challenge already completed.');
+    else if (sim.challenge === n.id) { sim.challenge = null; toast('Challenge abandoned.'); }
+    else { sim.challenge = n.id; challengeReset(n); toast(`Challenge started: ${n.title}`, 'ok'); }
+    sim.rates = computeRates(); refreshSimNodes(); renderEdges(); updateHud(); return;
+  }
+  if (n.type === 'repeatable' && (settings.buyMax === 'all' || (settings.buyMax === 'shift' && lastShift) || (settings.buyMaxIds.trim() && idMatcher(settings.buyMaxIds)(n.id)))) {
+    let c = 0; while (c < 5000 && autoBuy(n)) c++;                    // Buy max
+    if (c) { refreshSimNodes(); renderEdges(); updateHud(); toast(`Bought ${c} level${c > 1 ? 's' : ''} of ${n.title}`, 'ok'); } else toast('Cannot buy (unaffordable, locked or maxed).', 'error');
+    return;
+  }
+  if (n.type === 'rebirth') { if (boardUnlocked(n)) doRebirth(n); else toast('Locked — own the required parent upgrade first.'); return; }
+  if (n.type === 'board') { toast(boardUnlocked(n) ? 'Boards fill automatically from their currency.' : 'Locked — own the required parent upgrade first.'); return; }
+  const s = statusInfo(n);
+  if (s.status === 'locked') { toast('Locked — own the required parent upgrade first.'); return; }
+  if (s.status === 'owned' || s.status === 'maxed') { toast('Already ' + (s.status === 'maxed' ? 'maxed.' : 'owned.')); return; }
+  const cs = costsAt(n, s.level);
+  const lacking = cs.find(c => balanceOf(c.currency) < c.amount);
+  if (lacking) { toast(`Not enough ${lacking.currency} (need ${fmt(lacking.amount)}).`, 'error'); return; }
+  cs.forEach(c => { const cur = findCurrency(c.currency); sim.balances[cur.name] -= c.amount; });
+  sim.levels[id] = s.level + 1; fxNode(n);
+  sim.rates = computeRates();
+  refreshSimNodes(); renderEdges(); updateHud();
+}
+
+/* ----- Simulation HUD ----- */
+function renderHud() { renderDev(); renderHudMain(); }
+function renderHudMain() {
+  const box = $('simBox');
+  if (!sim.active) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  box.innerHTML = `<div class="flex items-center gap-2 mb-2 flex-wrap">
+      <b class="text-sm">Simulation</b>
+      <button class="btn small" data-sim="toggle">${sim.running ? '⏸ Pause' : '▶ Resume'}</button>
+      <select class="inp" style="width:auto;padding:2px 4px;font-size:12px${playLocked() ? ';display:none' : ''}" data-sim="speed">${[1, 5, 20, 100].map(v => `<option value="${v}" ${sim.speed === v ? 'selected' : ''}>${v}×</option>`).join('')}</select>
+      <button class="btn small" data-sim="reset">Reset</button></div>
+    ${state.currencies.map((c, i) => `<div class="flex items-center gap-2 text-sm mb-1">
+      <span class="flex-1 truncate">${esc(c.name)}</span><b id="hb-${i}">0</b><span id="hr-${i}" class="text-xs text-slate-400 w-16 text-right"></span>
+      <button class="btn small" data-sim="boost" data-ci="${i}" title="Cheat: ×10 + 100"${playLocked() || !settings.cheats ? ' style="display:none"' : ''}>⚡</button></div>`).join('') || '<div class="hint">No currencies yet — add some in the Currencies tab.</div>'}
+    <div class="hint mt-1">Click Available nodes to buy. ⚡ = quick cheat for testing.</div>`;
+  updateHud();
+}
+function updateHud() {
+  if (!sim.active) return;
+  state.currencies.forEach((c, i) => {
+    const b = $('hb-' + i), r = $('hr-' + i); if (!b) return;
+    b.textContent = fmt(balanceOf(c.name));
+    const rate = sim.rates[c.name] || 0; r.textContent = (rate >= 0 ? '+' : '') + fmt(rate) + '/s';
+  });
+}
+
+/* ---------- 8. POINTER INTERACTION ---------- */
+let drag = null;       // { type:'pan'|'node', ...start info }
+
+viewport.addEventListener('pointerdown', e => {
+  if (e.target.closest('[data-ui]')) return;                       // HUD / controls handle their own clicks
+  if (e.button !== 0 && e.button !== 1) return;
+  const nodeEl = e.target.closest('.node');
+  if (nodeEl && e.button === 0) {
+    const n = state.nodes[nodeEl.dataset.id]; if (!n) return;
+    e.preventDefault();
+    if (playLocked()) { buyNode(n.id); return; }
+    if (state.tool === 'connect') { handleConnectClick(n.id); return; }
+    if (!sim.active && e.shiftKey) { toggleMulti(n.id); return; }
+    if (!sim.active && multi.size > 1 && multi.has(n.id)) {           // drag the whole selection
+      drag = { type: 'multi', sx: e.clientX, sy: e.clientY, moved: false, start: [...multi].map(id => [id, state.nodes[id].x, state.nodes[id].y]) };
+      return;
+    }
+    if (multi.size) clearMulti();
+    drag = { type: 'node', id: n.id, sx: e.clientX, sy: e.clientY, nx: n.x, ny: n.y, moved: false };
+    if (state.selected !== n.id) select(n.id);
+    return;
+  }
+  const ei = e.target.dataset ? e.target.dataset.ei : undefined;
+  if (ei !== undefined && e.button === 0) { if (!playLocked()) selectEdge(+ei); return; }
+  e.preventDefault();
+  if (e.shiftKey && !sim.active && state.tool !== 'connect' && e.button === 0) {   // Shift + drag on empty canvas = box select
+    const rr = viewport.getBoundingClientRect(), bx = e.clientX - rr.left, by = e.clientY - rr.top;
+    drag = { type: 'box', x0: bx, y0: by, x1: bx, y1: by, moved: false }; return;
+  }
+  drag = { type: 'pan', sx: e.clientX, sy: e.clientY, vx: state.view.x, vy: state.view.y, moved: false };
+  viewport.classList.add('panning');
+});
+window.addEventListener('pointermove', e => {
+  const r = viewport.getBoundingClientRect();                      // track cursor in world space (for the connect rubber band)
+  mouseWorld = { x: (e.clientX - r.left - state.view.x) / state.view.k, y: (e.clientY - r.top - state.view.y) / state.view.k };
+  if (state.connectFrom) updateRubber();
+  if (!drag) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  if (!drag.moved) {
+    if (Math.hypot(dx, dy) < 4) return;                            // small jitter still counts as a click
+    drag.moved = true;
+    if ((drag.type === 'node' || drag.type === 'multi') && !sim.active) pushUndo();
+  }
+  if (drag.type === 'box') { drag.x1 = e.clientX - r.left; drag.y1 = e.clientY - r.top; drawBox(drag); }
+  else if (drag.type === 'multi') {
+    if (!sim.active) {
+      for (const [id, x0, y0] of drag.start) {
+        const n = state.nodes[id]; if (!n) continue;
+        let x = x0 + dx / state.view.k, y = y0 + dy / state.view.k; if (state.snap && !e.altKey) { x = snapv(x); y = snapv(y); }
+        n.x = x; n.y = y; els[id].style.transform = `translate(${x}px, ${y}px)`;
+      }
+      scheduleEdges();
+    }
+  }
+  else if (drag.type === 'pan') { state.view.x = drag.vx + dx; state.view.y = drag.vy + dy; applyView(); }
+  else if (!sim.active) {                                          // node drag (disabled while simulating)
+    const n = state.nodes[drag.id]; if (!n) return;
+    let x = drag.nx + dx / state.view.k, y = drag.ny + dy / state.view.k;
+    if (state.snap && !e.altKey) { x = snapv(x); y = snapv(y); }
+    n.x = x; n.y = y;
+    els[n.id].style.transform = `translate(${x}px, ${y}px)`;
+    scheduleEdges(); syncPosInputs(n);
+  }
+});
+window.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const d = drag; drag = null; viewport.classList.remove('panning');
+  if (d.type === 'box') { endBox(d); return; }
+  if (d.type === 'multi') { if (d.moved) save(); return; }
+  if (d.type === 'pan' && !d.moved) { if (state.connectFrom) cancelConnect(); select(null); }
+  else if (d.type === 'node') { if (!d.moved) { if (sim.active) buyNode(d.id); } else save(); }
+});
+window.addEventListener('pointercancel', () => { const mq = $('marquee'); if (mq) mq.remove(); drag = null; viewport.classList.remove('panning'); });
+
+/* Mouse wheel / pinch-trackpad zoom, centred on the cursor */
+viewport.addEventListener('wheel', e => {
+  if (e.target.closest('[data-ui]')) return;
+  e.preventDefault();
+  const r = viewport.getBoundingClientRect();
+  zoomAt(e.clientX - r.left, e.clientY - r.top, state.view.k * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
+}, { passive: false });
+
+/* ---------- 9. PANEL EVENTS, MODAL, KEYBOARD, INIT ---------- */
+
+/* Node inspector — events are delegated so they survive innerHTML re-renders. */
+$('tab-inspector').addEventListener('input', e => {
+  const t = e.target, f = t.dataset.field; if (!f || f === 'id' || f === 'type' || f === 'parentAdd' || f === 'requires') return;
+  const n = state.nodes[state.selected]; if (!n) return;
+  const i = +t.dataset.i;
+  pushUndo(`edit:${n.id}:${f}:${i}`);
+  switch (f) {
+    case 'title': n.title = t.value; break;
+    case 'description': n.description = t.value; break;
+    case 'maxLevel': n.maxLevel = Math.max(0, Math.floor(numOr(t.value, 0))); break;
+    case 'costGrowth': n.costGrowth = Math.max(0, numOr(t.value, 1)); break;
+    case 'autoIds': n.auto.ids = t.value; break;
+    case 'autoDelay': n.auto.delay = Math.max(0, numOr(t.value, 0)); break;
+    case 'rtIds': n.retype.ids = t.value; break;
+    case 'rtType': n.retype.to = t.value; break;
+    case 'nodeColor': n.color = t.value; break;
+    case 'nodeTag': n.tag = t.value.trim(); break;
+    case 'nodeIcon': n.icon = t.value.trim(); break;
+    case 'nodeVfx': n.vfx = t.value; break;
+    case 'cond': n.cond = t.value; break;
+    case 'chReset': n.chReset = t.value; break;
+    case 'penTarget': n.penalty[i].target = t.value; break;
+    case 'penMod': n.penalty[i].modifier = t.value; break;
+    case 'blkIds': n.blocks.ids = t.value; break;
+    case 'blkUntil': n.blocks.until = t.value; break;
+    case 'dsIds': n.disables[i].ids = t.value; break;
+    case 'dsProp': n.disables[i].prop = t.value; break;
+    case 'dsVal': n.disables[i].val = t.value; break;
+    case 'rbGain': n.rebirth.gain = t.value; break;
+    case 'rbCur': n.rebirth.currency = t.value.trim(); break;
+    case 'rbFloor': n.rebirth.floor = t.value === '1'; break;
+    case 'rbRoots': n.rebirth.keepRoots = t.value === '1'; break;
+    case 'rbKeep': n.rebirth.keep = t.value; break;
+    case 'rbReset': n.rebirth.reset = t.value; break;
+    case 'boardSource': n.board.source = t.value.trim(); break;
+    case 'boardFill': n.board.fill = t.value === 'income' ? 'income' : 'consume'; break;
+    case 'boardReq': n.board.req = t.value; break;
+    case 'boardStart': n.board.startLevel = Math.max(0, Math.floor(numOr(t.value, 0))); break;
+    case 'boardMax': n.board.maxLevel = Math.max(0, Math.floor(numOr(t.value, 0))); break;
+    case 'lineLabel': n.board.lines[i].label = t.value; break;
+    case 'lineFormula': n.board.lines[i].formula = t.value; break;
+    case 'linePrefix': n.board.lines[i].prefix = t.value; break;
+    case 'lineSuffix': n.board.lines[i].suffix = t.value; break;
+    case 'costCurrency': n.costs[i].currency = t.value; break;
+    case 'costAmount': n.costs[i].amount = parseAmount(t.value, 0); break;
+    case 'effTarget': n.effects[i].target = t.value; break;
+    case 'effMod': n.effects[i].modifier = t.value; break;
+    case 'x': n.x = numOr(t.value, n.x); scheduleEdges(); break;
+    case 'y': n.y = numOr(t.value, n.y); scheduleEdges(); break;
+  }
+  updateNodeEl(n, true); if (sim.active) { sim.rates = computeRates(); } save();
+});
+$('tab-inspector').addEventListener('change', e => {
+  const t = e.target, f = t.dataset.field; if (!f) return;
+  const n = state.nodes[state.selected]; if (!n) return;
+  if (f === 'id') { if (!renameNode(n.id, t.value)) t.value = n.id; }
+  else if (f === 'type') { pushUndo(); n.type = t.value; updateNodeEl(n, true); renderInspector(); save(); }
+  else if (f === 'requires') { pushUndo(); n.requires = t.value === 'any' ? 'any' : 'all'; updateNodeEl(n, true); save(); }
+  else if (f === 'parentAdd' && t.value) addEdge(t.value, n.id);
+  else if (f.startsWith('cost') || f.startsWith('eff') || f.startsWith('board') || f.startsWith('rb') || f.startsWith('ds') || f.startsWith('pen') || f === 'cond' || f.startsWith('line')) renderInspector();   // refresh "missing currency" warnings
+});
+$('tab-inspector').addEventListener('click', e => {
+  const b = e.target.closest('[data-action]'); if (!b) return;
+  const a = b.dataset.action, n = state.nodes[state.selected], i = +b.dataset.i;
+  switch (a) {
+    case 'addNode': addNode(); break;
+    case 'loadExample': pushUndo(); applyTree(parseTree(EXAMPLE)); break;
+    case 'delEdge': if (state.selectedEdge) removeEdge(state.selectedEdge.from, state.selectedEdge.to); break;
+    case 'goto': select(b.dataset.id); break;
+    case 'delParent': if (n) removeEdge(b.dataset.p, n.id); break;
+    case 'addCost': if (n) { pushUndo(); n.costs.push({ currency: state.currencies[0] ? state.currencies[0].name : 'Points', amount: 10 }); updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'delCost': if (n) { pushUndo(); n.costs.splice(i, 1); updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'addPen': if (n) { pushUndo(); n.penalty.push({ target: '', modifier: '^0.5' }); renderInspector(); save(); } break;
+    case 'delPen': if (n) { pushUndo(); n.penalty.splice(i, 1); renderInspector(); save(); } break;
+    case 'clearColor': if (n) { pushUndo(); n.color = ''; updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'addDisable': if (n) { pushUndo(); n.disables.push({ ids: '', prop: 'effects', val: '' }); renderInspector(); save(); } break;
+    case 'delDisable': if (n) { pushUndo(); n.disables.splice(i, 1); renderInspector(); save(); } break;
+    case 'addLine': if (n) { pushUndo(); n.board.lines.push({ label: '', formula: 'level', prefix: '', suffix: '' }); updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'delLine': if (n) { pushUndo(); n.board.lines.splice(i, 1); updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'addEffect': if (n) { pushUndo(); n.effects.push({ target: '', modifier: '' }); renderInspector(); save(); } break;
+    case 'delEffect': if (n) { pushUndo(); n.effects.splice(i, 1); updateNodeEl(n, true); renderInspector(); save(); } break;
+    case 'addChild': if (n) addChildOf(n.id); break;
+    case 'dupNode': if (n) duplicateNode(n.id); break;
+    case 'delNode': if (n) deleteNode(n.id); break;
+  }
+});
+
+/* Currency manager */
+$('tab-currencies').addEventListener('input', e => {
+  const t = e.target, f = t.dataset.cf; if (!f || f === 'name') return;
+  const c = state.currencies[+t.dataset.ci]; if (!c) return;
+  pushUndo(`cur:${t.dataset.ci}:${f}`);
+  c[f] = parseAmount(t.value, 0); save();
+});
+$('tab-currencies').addEventListener('change', e => {
+  const t = e.target; if (t.dataset.cf !== 'name') return;
+  if (!renameCurrency(+t.dataset.ci, t.value)) t.value = state.currencies[+t.dataset.ci].name;
+});
+$('tab-currencies').addEventListener('click', e => {
+  const b = e.target.closest('[data-caction]'); if (!b) return;
+  if (b.dataset.caction === 'add') {
+    pushUndo(); let k = state.currencies.length + 1, nm; do { nm = 'Currency ' + k++; } while (findCurrency(nm));
+    state.currencies.push({ name: nm, start: 0, rate: 0 });
+  } else if (b.dataset.caction === 'del') {
+    pushUndo(); const [c] = state.currencies.splice(+b.dataset.ci, 1); if (c) delete sim.balances[c.name];
+  }
+  renderCurrencies(); renderHud(); renderNodes(); renderInspector(); save();
+});
+
+/* Simulation HUD buttons */
+$('hud').addEventListener('click', e => {
+  const b = e.target.closest('[data-sim]'); if (!b) return;
+  const a = b.dataset.sim;
+  if (a === 'toggle') { sim.running = !sim.running; sim.last = performance.now(); renderHud(); }
+  else if (a === 'reset') { resetSim(); refreshSimNodes(); renderEdges(); updateHud(); }
+  else if (a === 'boost' && !playLocked() && settings.cheats) { const c = state.currencies[+b.dataset.ci]; if (c) { sim.balances[c.name] = (sim.balances[c.name] || 0) * 10 + 100; updateHud(); refreshSimNodes(); } }
+});
+$('hud').addEventListener('change', e => { if (e.target.dataset.sim === 'speed') sim.speed = playLocked() ? 1 : (Number(e.target.value) || 1); });
+
+/* Top bar + zoom buttons */
+$('btnAdd').onclick = () => addNode();
+$('btnConnect').onclick = () => setTool(state.tool === 'connect' ? 'select' : 'connect');
+$('chkSnap').onchange = e => { state.snap = e.target.checked; };
+$('btnUndo').onclick = undo; $('btnRedo').onclick = redo;
+$('btnFit').onclick = fitView;
+$('btnSim').onclick = () => sim.active ? stopSim() : startSim();
+$('btnClear').onclick = clearAll;
+$('btnPanel').onclick = () => { const s = $('sidebar'); s.style.display = s.style.display === 'none' ? '' : 'none'; setTimeout(applyView, 0); };
+$('zIn').onclick = () => { const r = viewport.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, state.view.k * 1.25); };
+$('zOut').onclick = () => { const r = viewport.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, state.view.k / 1.25); };
+$('zReset').onclick = () => { const r = viewport.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1); };
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => setTab(t.dataset.tab));
+
+/* ----- Import / Export modal ----- */
+function openModal(mode) {
+  const m = $('modal'), ta = $('mText'), msg = $('mMsg'), btns = $('mBtns');
+  msg.textContent = ''; msg.className = 'text-sm'; btns.innerHTML = '';
+  const add = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.onclick = fn; btns.appendChild(b); return b; };
+  if (mode === 'export') {
+    $('mTitle').textContent = 'Export Tree Data';
+    $('mDesc').textContent = 'Clean JSON of every node (position, parents, costs, effects) and currency. Paste it into your game or re-import it later.';
+    ta.readOnly = false; ta.value = JSON.stringify(exportData(), null, 2); ta.readOnly = true;
+    add('Copy', 'primary', async () => {
+      try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand('copy'); }
+      msg.className = 'text-sm text-green-400'; msg.textContent = 'Copied to clipboard.';
+    });
+    add('Download .json', '', () => {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ta.value], { type: 'application/json' }));
+      a.download = 'upgrade-tree.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    add('Close', '', closeModal);
+  } else {
+    $('mTitle').textContent = 'Import Tree Data';
+    $('mDesc').textContent = 'Paste exported JSON or load a .json file. Importing replaces the current tree (undo with Ctrl+Z). Invalid links and cycles are dropped automatically.';
+    ta.readOnly = false; ta.value = ''; ta.placeholder = '{ "currencies": [...], "nodes": [...] }';
+    add('Choose file…', '', () => $('mFile').click());
+    add('Load Tree', 'primary', () => {
+      try {
+        const t = parseTree(JSON.parse(ta.value));
+        pushUndo(); applyTree(t); closeModal();
+        toast(`Imported ${Object.keys(t.nodes).length} nodes` + (t.warnings.length ? ` — ${t.warnings.length} warning(s): ${t.warnings.slice(0, 3).join(' ')}` : '.'), t.warnings.length ? 'info' : 'ok', t.warnings.length ? 8000 : 3000);
+      } catch (err) { msg.className = 'text-sm text-red-400'; msg.textContent = 'Import failed: ' + err.message; }
+    });
+    add('Cancel', '', closeModal);
+  }
+  m.style.display = 'flex';
+  if (mode === 'import') ta.focus();
+}
+function closeModal() { $('modal').style.display = 'none'; }
+$('mClose').onclick = closeModal;
+$('modal').addEventListener('pointerdown', e => { if (e.target === $('modal')) closeModal(); });
+$('mFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { $('mText').value = String(r.result); }; r.readAsText(f); e.target.value = '';
+};
+$('btnExport').onclick = () => openModal('export');
+$('btnImport').onclick = () => openModal('import');
+
+/* ----- Keyboard shortcuts (ignored while typing in a field) ----- */
+window.addEventListener('keydown', e => {
+  if ($('modal').style.display === 'flex') { if (e.key === 'Escape') closeModal(); return; }
+  if (playLocked()) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+  if (mod && !sim.active && k === 'a') { e.preventDefault(); setMulti(Object.keys(state.nodes)); return; }
+  if (mod && !sim.active && k === 'c') { copyNodes(); return; }
+  if (mod && !sim.active && k === 'v') { e.preventDefault(); pasteNodes(); return; }
+  if (mod || e.altKey) return;
+  if (k === 'delete' || k === 'backspace') {
+    e.preventDefault();
+    if (multi.size) deleteNodes(multi);
+    else if (state.selectedEdge) removeEdge(state.selectedEdge.from, state.selectedEdge.to);
+    else if (state.selected) deleteNode(state.selected);
+  }
+  else if (k === 'escape') { if (state.connectFrom) cancelConnect(); else if (state.tool === 'connect') setTool('select'); else select(null); }
+  else if (k === 'n') { e.preventDefault(); addNode(); }
+  else if (k === 'c') setTool(state.tool === 'connect' ? 'select' : 'connect');
+  else if (k === 'f') fitView();
+});
+window.addEventListener('resize', applyView);
+
+/* ----- Boot ----- */
+(function init() {
+  if (!loadSaved()) { const t = parseTree(EXAMPLE); state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; }
+  fullRender(); fitView();
+})();
+$('tab-settings').addEventListener('change', e => {
+  const k = e.target.dataset.set; if (!k) return;
+  settings[k] = e.target.type === 'checkbox' ? e.target.checked : (e.target.dataset.num ? Number(e.target.value) : e.target.value);
+  saveSettings(); applySettings();
+});
+$('tab-settings').addEventListener('click', e => {
+  if (e.target.dataset.act === 'resetSettings') { Object.assign(settings, SETTING_DEFAULTS); saveSettings(); renderSettings(); applySettings(); }
+});
+renderSettings(); state.snap = settings.snap; $('chkSnap').checked = settings.snap; updateHint();
+$('search').addEventListener('input', e => {
+  searchQ = e.target.value.trim().toLowerCase(); let hits = 0;
+  Object.values(state.nodes).forEach(n => { if (searchHit(n)) hits++; updateNodeEl(n, true); });
+  $('searchCount').textContent = searchQ ? `${hits} match${hits === 1 ? '' : 'es'}` : '';
+});
+$('search').addEventListener('keydown', e => { if (e.key === 'Escape') { e.target.value = ''; e.target.dispatchEvent(new Event('input')); e.target.blur(); } e.stopPropagation(); });
+$('tab-vars').addEventListener('input', e => { const i = +e.target.dataset.g, k = e.target.dataset.k; if (isNaN(i) || !k || !G()[i]) return; pushUndo('gv'); G()[i][k] = e.target.value; if (sim.active) sim.rates = computeRates(); save(); });
+$('tab-vars').addEventListener('change', () => { renderVars(); fullRender(); });
+$('tab-vars').addEventListener('click', e => {
+  const a = e.target.dataset.act;
+  if (a === 'addVar') { pushUndo(); G().push({ name: 'var' + (G().length + 1), value: '1' }); renderVars(); save(); }
+  else if (a === 'delVar') { pushUndo(); G().splice(+e.target.dataset.g, 1); renderVars(); fullRender(); save(); }
+});
+$('devBox').addEventListener('change', e => {
+  const k = e.target.dataset.dev;
+  if (k === 'cur') sim.devCur = +e.target.value; else if (k === 'inf') sim.infinite = e.target.checked; else if (k === 'amt') sim.devAmt = e.target.value;
+  updateDevBreak();
+});
+$('devBox').addEventListener('click', e => {
+  const k = e.target.dataset.dev;
+  if (k === 'exp') { const code = exportSave(); try { navigator.clipboard.writeText(code); } catch (err) { /* ignore */ } prompt('Save string (also copied if the browser allows):', code); return; }
+  if (k === 'imp') { const c = prompt('Paste a save string:'); if (c) importSave(c); return; }
+  if (k !== 'grant' && k !== 'set') return;
+  const c = state.currencies[sim.devCur || 0], a = parseAmount($('devBox').querySelector('[data-dev="amt"]').value); if (!c || !Number.isFinite(a)) return;
+  sim.balances[c.name] = k === 'grant' ? (sim.balances[c.name] || 0) + a : a;
+  sim.rates = computeRates(); updateHud(); refreshSimNodes(); updateDevBreak();
+});
+$('tab-vfx').addEventListener('input', e => {
+  const path = e.target.dataset.vf, cur = (state.vfx || [])[vfxSel]; if (!path || !cur) return;
+  const v = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value;
+  if (path === 'name') { const old = cur.name; let nn = String(v).trim() || 'Effect'; if (state.vfx.some((x, j) => j !== vfxSel && x.name === nn)) return; cur.name = nn; Object.values(state.nodes).forEach(n => { if (n.vfx === old) n.vfx = nn; }); }
+  else { const [g, k] = path.split('.'); cur[g][k] = v; }
+  save();
+});
+$('tab-vfx').addEventListener('change', e => { if (e.target.dataset.vfaSel !== undefined) { vfxSel = +e.target.value; renderVfx(); } });
+$('tab-vfx').addEventListener('click', e => {
+  const a = e.target.dataset.vfa; if (!a) return; const list = state.vfx || (state.vfx = []), cur = list[vfxSel];
+  const uniq = b => { let n = b, i = 2; while (list.some(x => x.name === n)) n = b + ' ' + i++; return n; };
+  if (a === 'new') { const d = vfxDefault(); d.name = uniq('New effect'); list.push(d); vfxSel = list.length - 1; }
+  else if (a === 'presets') { VFX_PRESETS.forEach(pr => { if (!list.some(x => x.name === pr.name)) list.push(normVfx(pr)); }); }
+  else if (a === 'dup' && cur) { const d = normVfx(cur); d.name = uniq(cur.name + ' copy'); list.push(d); vfxSel = list.length - 1; }
+  else if (a === 'del' && cur) { list.splice(vfxSel, 1); Object.values(state.nodes).forEach(n => { if (n.vfx === cur.name) n.vfx = ''; }); vfxSel = Math.max(0, vfxSel - 1); }
+  else if (a === 'test' && cur) { playVfx(cur.name, state.selected, { gain: '12.3K Honey' }, true); return; }
+  else if (a === 'testc' && cur) { playVfx(cur.name, null, { gain: '12.3K Honey' }, true); return; }
+  renderVfx(); save();
+});
+</script>
+</body>
+</html>
