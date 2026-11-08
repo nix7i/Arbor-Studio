@@ -15,7 +15,6 @@ directly into their project workflows.
 
 - **Version:** 1.0.0
 - **Author:** fluffyboysoren
-- **Company:** Nightfall Software
 
 ---
 
