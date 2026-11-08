@@ -20,13 +20,6 @@
       "target": "nsis",
       "icon": "build/icon.ico"
     },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "YOUR_GITHUB_NAME",
-        "repo": "arbor-studio",
-        "releaseType": "release"
-      }
-    ]
+    "publish": [{ "provider": "github", "owner": "nix7i", "repo": "Arbor-Studio", "releaseType": "release" }]
   }
 }
