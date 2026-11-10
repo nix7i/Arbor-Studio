@@ -2347,6 +2347,7 @@ function validateTree() {
     }
     return a;
   };
+  const ck = x => ident(normName(x));                                  // how Rebirth matches currency names (see doRebirth)
   const tokens = pat => trim(pat).split(',').map(trim).filter(Boolean);
   const patCheck = (pat, n, label) => tokens(pat).forEach(t => {
     const f = idMatcher(t); if (!nodes.some(x => f(x.id))) add('warn', 'logic', `“${t}” matches no nodes.`, { id: n.id, where: label });
@@ -2355,8 +2356,8 @@ function validateTree() {
     const where = `${label} ${i + 1}`, mod = trim(e.modifier); if (!mod && !trim(e.target)) return;
     const p = parseEffect(e);
     if (!p) {
-      if (/^[x×*+^]/.test(mod)) add('warn', 'logic', `“${mod}” has no target currency, so it does nothing.`, { id: n.id, where });
-      else if (!trim(e.target) && /[\d()*^\/+-]/.test(mod) && !compileFormula(mod).error) add('warn', 'logic', `“${mod}” looks like a formula but has no Target currency, so it does nothing.`, { id: n.id, where });
+      if (/^[x×*+^]/.test(mod)) add('warn', 'logic', `“${mod}” has no Target currency, so it does nothing — fill in the Target field.`, { id: n.id, where });
+      else if (!trim(e.target) && /[\d()*^\/+-]/.test(mod) && !compileFormula(mod).error) add('warn', 'logic', `“${mod}” looks like a formula but has no Target currency, so it does nothing — fill in the Target field.`, { id: n.id, where });
       return;
     }
     if (p.formula) check(p.expr, n.id, where);
@@ -2398,11 +2399,9 @@ function validateTree() {
   if (loop) add('error', 'logic', `The link ${loop[0]} → ${loop[1]} forms a loop, so those nodes can never unlock.`, { id: loop[1], where: 'Links' });
 
   // ----- per-node checks -----
-  const hasChild = new Set(); nodes.forEach(n => n.parents.forEach(p => hasChild.add(p)));
   for (const n of nodes) {
     const id = n.id, T = n.type;
     n.parents.forEach(p => { if (!state.nodes[p]) add('error', 'logic', `Parent “${p}” doesn't exist.`, { id, where: 'Links' }); });
-    if (nodes.length > 1 && !n.parents.length && !hasChild.has(id)) add('info', 'logic', 'Not connected to any other node.', { id, where: 'Links' });
 
     if (!['board', 'achievement', 'challenge'].includes(T)) for (const c of n.costs) {
       const nm = trim(c.currency);
@@ -2410,9 +2409,7 @@ function validateTree() {
       if (!findCurrency(nm)) add('warn', 'logic', `Costs “${nm}”, which isn't in the Currencies tab (it will be added automatically when you test).`, { id, where: 'Costs' });
       if (!Number.isFinite(c.amount) || c.amount < 0) add('error', 'logic', `The ${nm} cost must be a number of 0 or more.`, { id, where: 'Costs' });
     }
-    if (!n.costs.length && ['normal', 'repeatable', 'unlock', 'auto', 'autoperm'].includes(T)) add('info', 'logic', 'No cost set — this upgrade is free.', { id, where: 'Costs' });
     if (T === 'repeatable' && !(n.costGrowth >= 1)) add('warn', 'logic', `Cost growth is ${n.costGrowth} (below 1), so every level gets cheaper.`, { id, where: 'Repeatable' });
-    if (!n.effects.some(e => trim(e.modifier) || trim(e.target)) && ['normal', 'repeatable'].includes(T)) add('info', 'logic', 'Has no effects, so buying it changes nothing.', { id, where: 'Effects' });
 
     effectChecks(n.effects, n, 'Effect');
     if (n.vfx && !(state.vfx || []).some(v => v.name === n.vfx)) add('warn', 'logic', `VFX “${n.vfx}” no longer exists.`, { id, where: 'VFX' });
@@ -2429,7 +2426,7 @@ function validateTree() {
       const t = rebirthTarget(n);
       check(t.expr, id, 'Rebirth gain', { required: true });
       if (!t.cur) add('error', 'logic', 'Rebirth has no valid target currency — write “name = formula” or pick one.', { id, where: 'Rebirth' });
-      tokens(n.rebirth.keep).forEach(k => { if (!findCurrency(k)) add('warn', 'logic', `Keep-currency “${k}” doesn't exist.`, { id, where: 'Rebirth' }); });
+      tokens(n.rebirth.keep).forEach(k => { if (!state.currencies.some(c => ck(c.name) === ck(k))) add('warn', 'logic', `Keep-currency “${k}” doesn't match any currency.`, { id, where: 'Rebirth' }); });   // same matching as doRebirth: “prestige_points” = “Prestige Points”
       patCheck(n.rebirth.reset, n, 'Reset scope');
     }
     if (T === 'achievement' || T === 'challenge') {
