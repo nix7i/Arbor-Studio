@@ -336,6 +336,10 @@
   .proj-name:hover { border-color: var(--line-strong); }
   .proj-meta { padding-left: 7px; font-size: 11px; color: var(--tx-3); }
   .proj-badge { padding: 1px 8px; font-size: 10.5px; font-weight: 700; border-radius: var(--r-sm); background: var(--accent); color: #000; }
+
+  /* zoomed-out grid: only the major lines are painted (see applyView) */
+  #viewport.grid-lite { background-image: linear-gradient(to right, rgba(255,255,255,.075) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.075) 1px, transparent 1px); }
+  #viewport.grid-none { background-image: none; }
 </style>
 </head>
 
@@ -749,6 +753,20 @@ function rtScript(where, e) {                             // an exception in the
   rtAdd('script\0' + where + '\0' + ((e && e.message) || e), { kind: 'script', where, msg: (e && e.message) || String(e), sev: 'error' });
 }
 function rtReset() { RT.map.clear(); RT.dirty = true; }
+/* ---------- Performance: rule index ----------
+   effType / isBlocked / disabledOn used to scan EVERY node for EVERY node (O(N²), every tick).
+   Only a few nodes ever carry such rules, so we keep a short list of just those. It is rebuilt lazily and
+   thrown away (ruleIdx = null) whenever the tree might have changed: save(), fullRender(), each sim tick, inspector edits. */
+let ruleIdx = null;
+function rules() {
+  if (ruleIdx) return ruleIdx;
+  const all = Object.values(state.nodes);
+  return ruleIdx = {
+    retype: all.filter(o => o.retype && o.retype.ids.trim()),
+    block: all.filter(o => o.blocks && o.blocks.ids.trim()),
+    disable: all.filter(o => o.disables && o.disables.length),
+  };
+}
 const fCache = new Map();
 function compileFormula(src) {
   src = String(src ?? '').trim(); let c = fCache.get(src);
@@ -952,8 +970,8 @@ function idMatcherRaw(str) {
 }
 /* A node's effective type: an owned node with a "change type" rule overrides the type of the nodes it targets. */
 function effType(m) {
-  for (const o of Object.values(state.nodes)) {
-    if (o.retype && o.retype.ids.trim() && (sim.levels[o.id] || 0) > 0 && idMatcher(o.retype.ids)(m.id) && !disabledOn(o, 'retype').length) return o.retype.to;
+  for (const o of rules().retype) {
+    if ((sim.levels[o.id] || 0) > 0 && idMatcher(o.retype.ids)(m.id) && !disabledOn(o, 'retype').length) return o.retype.to;
   }
   return m.type;
 }
@@ -961,8 +979,8 @@ const isPerm = m => { const t = effType(m); return t === 'unlock' || t === 'auto
 /* Blocking: an owned node can forbid buying other nodes, permanently or until a node in `until` is owned. */
 function isBlocked(m) {
   if (!sim.active) return false;
-  for (const o of Object.values(state.nodes)) {
-    const b = o.blocks; if (!b || !b.ids.trim() || o === m || !isOwnedId(o.id) || !idMatcher(b.ids)(m.id)) continue;
+  for (const o of rules().block) {
+    const b = o.blocks; if (o === m || !isOwnedId(o.id) || !idMatcher(b.ids)(m.id)) continue;
     if (b.until.trim()) { const lift = idMatcher(b.until); if (Object.values(state.nodes).some(x => lift(x.id) && isOwnedId(x.id))) continue; }
     return true;
   }
@@ -972,8 +990,8 @@ function isBlocked(m) {
 const DISABLE_PROPS = [['effects', 'Effects (boosts)'], ['resetCurrencies', 'Currency reset'], ['resetUpgrades', 'Upgrade reset'], ['automation', 'Automation'], ['retype', 'Type-change rule']];
 function disabledOn(m, prop) {
   const out = [];
-  for (const o of Object.values(state.nodes)) {
-    if (!o.disables || !o.disables.length || !isOwnedId(o.id)) continue;
+  for (const o of rules().disable) {
+    if (!isOwnedId(o.id)) continue;
     for (const d of o.disables) if (d.prop === prop && d.ids.trim() && idMatcher(d.ids)(m.id)) out.push(d.val || '');
   }
   return out;
@@ -1410,7 +1428,7 @@ function updateUndoButtons() { $('btnUndo').disabled = !undoStack.length; $('btn
 
 let saveTimer = 0;
 function save() {                                                  // called after every edit: autosave (debounced) + re-validate
-  clearTimeout(saveTimer); saveTimer = setTimeout(() => flushSave(), 300); scheduleValidate();
+  ruleIdx = null; clearTimeout(saveTimer); saveTimer = setTimeout(() => flushSave(), 300); scheduleValidate();
 }
 function loadSaved() {                                             // loads the open project (see section 10 for projects)
   initProjects();
@@ -1427,9 +1445,11 @@ function applyView() {
   world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.k})`;
   const minor = GRID * v.k, major = GRID * 5 * v.k;               // grid follows pan/zoom
   viewport.style.setProperty('--minor-a', minor >= 7 ? '.07' : '0');
-  viewport.style.backgroundSize = `${minor}px ${minor}px, ${minor}px ${minor}px, ${major}px ${major}px, ${major}px ${major}px`;
+  const lite = minor < 7, none = major < 7;                       // zoomed out: the fine grid is invisible, so don't paint it (saves a lot on big trees)
+  viewport.classList.toggle('grid-lite', lite && !none); viewport.classList.toggle('grid-none', none);
+  viewport.style.backgroundSize = lite ? `${major}px ${major}px, ${major}px ${major}px` : `${minor}px ${minor}px, ${minor}px ${minor}px, ${major}px ${major}px, ${major}px ${major}px`;
   const pos = `${v.x}px ${v.y}px`;
-  viewport.style.backgroundPosition = `${pos}, ${pos}, ${pos}, ${pos}`;
+  viewport.style.backgroundPosition = lite ? `${pos}, ${pos}` : `${pos}, ${pos}, ${pos}, ${pos}`;
   updateStatus();
 }
 function updateStatus() {
@@ -1502,6 +1522,7 @@ function updateNodeEl(n, force) {
   e.innerHTML = nodeInner(n, s);
 }
 function renderNodes() {
+  ruleIdx = null;
   for (const id in els) if (!state.nodes[id]) { els[id].remove(); delete els[id]; }
   Object.values(state.nodes).forEach(n => updateNodeEl(n, true));
 }
@@ -1660,6 +1681,7 @@ function updateHint() {
   viewport.classList.toggle('viewport-sim', sim.active);
 }
 function fullRender() {
+  ruleIdx = null;
   renderNodes(); renderEdges(); renderInspector(); renderCurrencies(); renderHud(); updateHint(); updateUndoButtons(); updateStatus();
 }
 function toast(msg, kind = 'info', ms = 3000) {
@@ -1857,7 +1879,13 @@ function parseFormulaEffect(e, mod) {
   return { kind, target, expr: expr.trim(), formula: true };
 }
 /* "x3", "×3", "+1/s", "x3 Points", "+1 Rebirth Point/s" -> { kind, value, target } */
+const peCache = new WeakMap();                                     // parsing effect text is regex work; do it once per edit, not 10x per second
 function parseEffect(e) {
+  const k = (e.modifier || '') + '\0' + (e.target || ''), c = peCache.get(e);
+  if (c && c.k === k) return c.v;
+  const v = parseEffectRaw(e); peCache.set(e, { k, v }); return v;
+}
+function parseEffectRaw(e) {
   const mod = String(e.modifier || '').trim();
   const m = mod.match(/^([x×*]|\+)\s*(\d*\.?\d+(?:e[+-]?\d+)?)\s*(\/\s*s(?:ec)?)?\s*(.*)$/i);
   if (!m || /^[-+*\/^%(),]/.test(m[4].trim())) return parseFormulaEffect(e, mod);
@@ -1922,6 +1950,7 @@ function startSim() {
 }
 function stopSim() { clearInterval(sim.timer); sim.timer = null; sim.active = false; fullRender(); }
 function simTick() {
+  ruleIdx = null;
   const now = performance.now(), dt = Math.min((now - sim.last) / 1000, 1) * sim.speed; sim.last = now;
   if (sim.running) {
     sim.time += dt;
@@ -2082,6 +2111,7 @@ viewport.addEventListener('wheel', e => {
 
 /* Node inspector — events are delegated so they survive innerHTML re-renders. */
 $('tab-inspector').addEventListener('input', e => {
+  ruleIdx = null;
   const t = e.target, f = t.dataset.field; if (!f || f === 'id' || f === 'type' || f === 'parentAdd' || f === 'requires') return;
   const n = state.nodes[state.selected]; if (!n) return;
   const i = +t.dataset.i;
@@ -2133,6 +2163,7 @@ $('tab-inspector').addEventListener('input', e => {
   updateNodeEl(n, true); if (sim.active) { sim.rates = computeRates(); } save();
 });
 $('tab-inspector').addEventListener('change', e => {
+  ruleIdx = null;
   const t = e.target, f = t.dataset.field; if (!f) return;
   const n = state.nodes[state.selected]; if (!n) return;
   if (f === 'id') { if (!renameNode(n.id, t.value)) t.value = n.id; }
@@ -2142,6 +2173,7 @@ $('tab-inspector').addEventListener('change', e => {
   else if (f.startsWith('cost') || f.startsWith('eff') || f.startsWith('board') || f.startsWith('rb') || f.startsWith('ds') || f.startsWith('pen') || f === 'cond' || f.startsWith('line')) renderInspector();   // refresh "missing currency" warnings
 });
 $('tab-inspector').addEventListener('click', e => {
+  ruleIdx = null;
   const b = e.target.closest('[data-action]'); if (!b) return;
   const a = b.dataset.action, n = state.nodes[state.selected], i = +b.dataset.i;
   switch (a) {
