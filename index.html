@@ -340,6 +340,19 @@
   /* zoomed-out grid: only the major lines are painted (see applyView) */
   #viewport.grid-lite { background-image: linear-gradient(to right, rgba(255,255,255,.075) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.075) 1px, transparent 1px); }
   #viewport.grid-none { background-image: none; }
+
+  /* ---- Performance settings ---- */
+  #perfHud { position: absolute; left: 10px; bottom: 10px; z-index: 40; padding: 6px 9px; font: 11.5px/1.5 var(--mono); white-space: pre; color: var(--tx-2);
+             background: rgba(0,0,0,.72); border: 1px solid var(--line-strong); border-radius: var(--r-md); pointer-events: none; }
+  /* "Lighter visuals": no animated transitions, no blur/filter passes, crisp rings instead of soft glows. Looks almost identical, paints much less. */
+  body.perf-lite .node, body.perf-lite .node * { transition: none !important; }
+  body.perf-lite .st-locked { filter: none; opacity: .5; }
+  body.perf-lite .st-available.can-buy { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 45%, transparent); }
+  body.perf-lite .type-milestone, body.perf-lite .type-rebirth { box-shadow: none; }
+  body.perf-lite .edge.neon { filter: none; }
+  body.perf-lite .edge.flow { animation: none; stroke-dasharray: none; }
+  /* "Skip off-screen nodes": the browser doesn't lay out or paint nodes you can't see */
+  body.perf-cull .node { content-visibility: auto; contain-intrinsic-size: 200px 128px; }
 </style>
 </head>
 
@@ -388,6 +401,7 @@
 
   <!-- ======================= WORKSPACE ======================= -->
   <main id="viewport" class="relative flex-1 overflow-hidden">
+    <div id="perfHud" style="display:none"></div>
     <div id="world">
       <!-- Edges live in an SVG with overflow visible, so it can draw anywhere in world space -->
       <svg id="edges" style="position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none">
@@ -584,7 +598,7 @@ const SUFFIX_VALUES = { k:1e3, m:1e6, b:1e9, t:1e12, qa:1e15, qd:1e15, qi:1e18, 
 const STORAGE_KEY = 'upgradeTreeDesigner.v1';
 /* ---------- SETTINGS (stored separately from the tree) ---------- */
 const SETTINGS_KEY = 'upgradeTreeDesigner.settings.v1';
-const SETTING_DEFAULTS = { playMode: false, cheats: true, speed: 1, locked: 'show', buyMax: 'shift', buyMaxIds: '', tickRate: 10, fx: true, lineShape: 'curve', lineFx: 'none', snap: true, hint: true, autosave: true };
+const SETTING_DEFAULTS = { playMode: false, cheats: true, speed: 1, locked: 'show', buyMax: 'shift', buyMaxIds: '', tickRate: 10, fx: true, lineShape: 'curve', lineFx: 'none', perf: 'quality', drawEvery: 1, lite: false, cull: false, perfHud: false, snap: true, hint: true, autosave: true };
 const settings = Object.assign({}, SETTING_DEFAULTS);
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* ignore */ }
 const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
@@ -594,7 +608,13 @@ function renderSettings() {
   const S = settings;
   const cb = (k, label, hint) => `<label class="flex items-start gap-2 text-sm text-slate-200 mb-2 cursor-pointer"><input type="checkbox" class="mt-1" data-set="${k}" ${S[k] ? 'checked' : ''}><span>${label}${hint ? `<span class="hint block">${hint}</span>` : ''}</span></label>`;
   const sel = (k, label, opts, num) => `<label class="lbl">${label}</label><select class="inp mb-2" data-set="${k}" ${num ? 'data-num="1"' : ''}>${opts.map(([v, t]) => `<option value="${v}" ${String(S[k]) === String(v) ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-  $('tab-settings').innerHTML = `<div class="lbl" style="margin-top:0">Simulation</div>`
+  $('tab-settings').innerHTML = `<div class="lbl" style="margin-top:0">Performance</div>`
+    + sel('perf', 'Preset', [['quality', 'Quality (everything on)'], ['balanced', 'Balanced (recommended for laptops)'], ['fast', 'Fastest (slow or old devices)'], ['custom', 'Custom']])
+    + sel('drawEvery', 'Redraw the tree every…', [[1, 'Every update (smoothest)'], [2, '2nd update'], [4, '4th update'], [8, '8th update (lightest)']], true)
+    + cb('lite', 'Lighter visuals', 'Removes animated transitions, blur/filter effects and soft glows. Looks almost the same but is much cheaper to draw.')
+    + cb('cull', 'Skip off-screen nodes', 'Nodes you can’t see aren’t drawn. Helps most on big trees when zoomed in.')
+    + cb('perfHud', 'Show performance monitor', 'Live frame rate, how long each simulation update takes, and page size — shown bottom-left of the stage. Send me these numbers if it still feels slow.')
+    + `<div class="lbl">Simulation</div>`
     + cb('playMode', 'Play mode', 'The top button becomes <b>Play</b>: while playing, editing nodes, undo/import/clear, the side panel, keyboard shortcuts, ⚡ cheats and speed-ups are all disabled. (Not tamper-proof against browser dev tools.)')
     + cb('cheats', 'Cheat buttons (⚡) &amp; Dev panel in Test mode', 'Dev panel: grant currencies, infinite resources, live production breakdown. Ignored in Play mode.')
     + sel('speed', 'Starting speed in Test mode', [[1, '1×'], [5, '5×'], [20, '20×'], [100, '100×']], true)
@@ -611,6 +631,7 @@ function renderSettings() {
     + `<button class="btn small mt-2" data-act="resetSettings">Reset settings</button>`;
 }
 function applySettings() {
+  applyPerf();
   state.snap = settings.snap; $('chkSnap').checked = settings.snap;
   if (settings.playMode && sim.active) sim.speed = 1;
   if (sim.timer) { clearInterval(sim.timer); sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10)); }
@@ -1550,7 +1571,7 @@ function edgePath(a, b) {
   }
   return `M${p1.x} ${p1.y} C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
 }
-const edgeFx = pid => settings.lineFx === 'neon' ? ' neon' : (settings.lineFx === 'flow' && sim.active && isOwnedId(pid) ? ' flow' : '');
+const edgeFx = pid => settings.lite ? '' : settings.lineFx === 'neon' ? ' neon' : (settings.lineFx === 'flow' && sim.active && isOwnedId(pid) ? ' flow' : '');
 function renderEdges() {
   edgeList = []; let html = '';
   for (const n of Object.values(state.nodes)) for (const pid of n.parents) {
@@ -1950,7 +1971,7 @@ function startSim() {
 }
 function stopSim() { clearInterval(sim.timer); sim.timer = null; sim.active = false; fullRender(); }
 function simTick() {
-  ruleIdx = null;
+  ruleIdx = null; const _p0 = performance.now();
   const now = performance.now(), dt = Math.min((now - sim.last) / 1000, 1) * sim.speed; sim.last = now;
   if (sim.running) {
     sim.time += dt;
@@ -1961,9 +1982,12 @@ function simTick() {
     try { sim.rates = computeRates(); } catch (e) { simError('rates', e); }
     state.currencies.forEach(c => { sim.balances[c.name] = (sim.balances[c.name] ?? c.start) + sim.rates[c.name] * dt; });
   }
-  updateHud(); refreshSimNodes();
-  const vis = Object.values(state.nodes).map(n => (isOwnedId(n.id) ? 1 : 0) + (nodeHidden(n) ? 2 : 0)).join('');
-  if (vis !== sim.vis) { sim.vis = vis; renderEdges(); }
+  if (((sim.dn = (sim.dn || 0) + 1) % (settings.drawEvery || 1)) === 0 || !sim.running) {       // the economy runs every tick; drawing can run less often
+    updateHud(); refreshSimNodes();
+    const vis = Object.values(state.nodes).map(n => (isOwnedId(n.id) ? 1 : 0) + (nodeHidden(n) ? 2 : 0)).join('');
+    if (vis !== sim.vis) { sim.vis = vis; renderEdges(); }
+  }
+  perfTick(performance.now() - _p0);
   if ((sim.bt = (sim.bt || 0) + 1) % 5 === 0) updateDevBreak();            // keep link colours / hidden links in step with auto-buys & unlocks
 }
 function refreshSimNodes() { Object.values(state.nodes).forEach(n => updateNodeEl(n, false)); }
@@ -2826,6 +2850,46 @@ function openRunModal(mode) {                                  // re-uses the Im
 $('btnRunSave').onclick = () => openRunModal('runSave');
 $('btnRunLoad').onclick = () => openRunModal('runLoad');
 
+/* ---------- Performance settings + live monitor ----------
+   Presets only set the individual options below; changing any option by hand switches the preset to "Custom". */
+const PERF_PRESETS = {
+  quality:  { tickRate: 10, drawEvery: 1, lite: false, cull: false, fx: true },
+  balanced: { tickRate: 10, drawEvery: 2, lite: true,  cull: true,  fx: true },
+  fast:     { tickRate: 5,  drawEvery: 1, lite: true,  cull: true,  fx: false },
+};
+const PERF_KEYS = ['tickRate', 'drawEvery', 'lite', 'cull', 'fx'];
+const PERF = { tick: 0, tickMax: 0, fps: 0, worst: 0, frames: 0, raf: 0, timer: 0, ticks: 0 };
+function perfTick(ms) {                                            // called at the end of every simulation tick
+  PERF.tick = PERF.tick ? PERF.tick * 0.9 + ms * 0.1 : ms; PERF.ticks++;
+  if (ms > PERF.tickMax) PERF.tickMax = ms;
+}
+function perfFrame(now) {                                          // frame counter, only runs while the monitor is on
+  if (!PERF.last) PERF.last = now;
+  const d = now - PERF.last; PERF.last = now; PERF.frames++; if (d > PERF.worst) PERF.worst = d;
+  PERF.raf = settings.perfHud ? requestAnimationFrame(perfFrame) : 0;
+}
+function perfReport() {
+  const el = $('perfHud'); if (!el) return;
+  const secs = (performance.now() - (PERF.since || performance.now())) / 1000 || 1;
+  PERF.fps = Math.round(PERF.frames / secs);
+  const budget = 1000 / (settings.tickRate || 10), used = Math.round(PERF.tick / budget * 100);
+  const dom = document.getElementsByTagName('*').length;
+  el.textContent = `${PERF.fps} fps (worst frame ${Math.round(PERF.worst)} ms)\n`
+    + (sim.active ? `sim tick ${PERF.tick.toFixed(1)} ms avg · ${PERF.tickMax.toFixed(1)} ms max · ${used}% of its ${Math.round(budget)} ms slot\n` : 'sim tick: start ▶ Test to measure\n')
+    + `${Object.keys(state.nodes).length} nodes · ${dom.toLocaleString()} page elements`;
+  PERF.since = performance.now(); PERF.frames = 0; PERF.worst = 0; PERF.tickMax = 0;
+}
+function applyPerf() {
+  document.body.classList.toggle('perf-lite', !!settings.lite);
+  document.body.classList.toggle('perf-cull', !!settings.cull);
+  const el = $('perfHud'); if (el) el.style.display = settings.perfHud ? '' : 'none';
+  clearInterval(PERF.timer); PERF.timer = 0;
+  if (settings.perfHud) { PERF.since = performance.now(); PERF.frames = 0; PERF.last = 0; PERF.worst = 0; if (!PERF.raf) PERF.raf = requestAnimationFrame(perfFrame); PERF.timer = setInterval(perfReport, 1000); }
+}
+function applyPreset(name) {
+  const p = PERF_PRESETS[name]; if (!p) return;
+  Object.assign(settings, p, { perf: name });
+}
 /* ----- Boot ----- */
 (function init() {
   if (!loadSaved()) { const t = parseTree(EXAMPLE); state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; }
@@ -2834,7 +2898,9 @@ $('btnRunLoad').onclick = () => openRunModal('runLoad');
 $('tab-settings').addEventListener('change', e => {
   const k = e.target.dataset.set; if (!k) return;
   settings[k] = e.target.type === 'checkbox' ? e.target.checked : (e.target.dataset.num ? Number(e.target.value) : e.target.value);
-  saveSettings(); applySettings();
+  if (k === 'perf') applyPreset(settings.perf);
+  else if (PERF_KEYS.includes(k)) settings.perf = 'custom';
+  saveSettings(); applySettings(); if (k === 'perf' || PERF_KEYS.includes(k)) renderSettings();
 });
 $('tab-settings').addEventListener('click', e => {
   if (e.target.dataset.act === 'resetSettings') { Object.assign(settings, SETTING_DEFAULTS); saveSettings(); renderSettings(); applySettings(); }
