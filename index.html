@@ -215,7 +215,7 @@
   #devBreak { font-family: var(--mono); color: var(--tx-2); background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; }
 
   /* play mode: editing controls are inert while a Play session is running */
-  .playing #btnAdd, .playing #btnConnect, .playing #btnUndo, .playing #btnRedo, .playing #btnImport, .playing #btnClear, .playing #chkSnap,
+  .playing #btnAdd, .playing #btnConnect, .playing #btnUndo, .playing #btnRedo, .playing #btnImport, .playing #btnClear, .playing #chkSnap, .playing #btnProjects,
   .playing #tab-inspector, .playing #tab-currencies, .playing #tab-settings, .playing #tab-vars, .playing #tab-vfx { pointer-events: none; opacity: .4; }
 
   .ac { position: fixed; z-index: 80; background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 4px; font: 12px var(--mono); box-shadow: 0 8px 24px rgba(0,0,0,.5); }
@@ -276,6 +276,66 @@
   .legend { font-size: 11.5px; color: var(--tx-2); }
 
   @media (max-width: 900px) { .rail { width: 160px; } .inspector { width: 300px; } }
+
+  /* ---- 6. Additions: project switcher, tab menu, Log tab, node problem dots ---- */
+  .crumb-sep { color: var(--tx-4); margin: 0 -2px 0 2px; font-size: 14px; }
+  .proj-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; padding: 4px 8px; font-size: 12.5px; font-weight: 500; color: var(--tx-1);
+               border: 1px solid transparent; border-radius: var(--r-md); transition: background var(--t), border-color var(--t); }
+  .proj-chip:hover { background: var(--bg-raised); border-color: var(--line-strong); }
+  .proj-chip:active { background: var(--bg-input); }
+  .proj-chip .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proj-chip .caret { color: var(--tx-3); font-size: 10px; }
+
+  /* inspector tabs: Node / Currencies / Log, plus a "More" menu for the rest */
+  .inspector { position: relative; }
+  .tabs { overflow: visible; }
+  .tab-count { display: inline-block; min-width: 16px; margin-left: 6px; padding: 0 5px; border-radius: 8px; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center; vertical-align: 1px; }
+  .tab-count[hidden] { display: none; }
+  .tab-count.err { background: var(--bad); color: #fff; }
+  .tab-count.warn { background: var(--warn); color: #000; }
+  .tab-more { flex: 0 0 auto; margin-left: auto; padding: 11px 12px 9px; font-size: 12px; font-weight: 500; color: var(--tx-3); border-bottom: 2px solid transparent; white-space: nowrap; transition: color var(--t), border-color var(--t); }
+  .tab-more:hover, .tab-more.open { color: var(--tx-1); }
+  .tab-more.active { color: var(--tx-1); border-bottom-color: var(--accent-ring); }
+  .tab-menu { position: absolute; top: 42px; right: 8px; z-index: 30; width: 160px; padding: 4px; display: none; background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 12px 32px rgba(0,0,0,.6); }
+  .tab-menu.open { display: block; }
+  .tab-menu .tab { display: flex; width: 100%; flex: none; padding: 7px 10px; text-align: left; border: 0; border-radius: var(--r-sm); font-size: 12.5px; }
+  .tab-menu .tab:hover { background: var(--bg-hover); }
+  .tab-menu .tab.active { background: var(--accent-soft); color: var(--tx-1); }
+
+  /* Log tab */
+  .log-sum { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .pill { display: inline-flex; align-items: center; padding: 2px 8px; font-size: 11.5px; font-weight: 600; border-radius: var(--r-sm); border: 1px solid var(--line-strong); color: var(--tx-2); background: var(--bg-raised); }
+  .pill.err { color: #ff9b96; border-color: #6b2a2d; background: #1f0f10; }
+  .pill.warn { color: #e3b341; border-color: #5c4513; background: #1a1405; }
+  .pill.ok { color: #7fdc9a; border-color: #1f5a30; background: #0b1a10; }
+  .seg { display: flex; margin-bottom: 10px; border: 1px solid var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
+  .seg button { flex: 1; padding: 5px 6px; font-size: 12px; color: var(--tx-3); border-right: 1px solid var(--line-strong); transition: background var(--t), color var(--t); }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { color: var(--tx-1); background: var(--bg-hover); }
+  .seg button.on { color: var(--tx-1); background: var(--bg-hover); box-shadow: inset 0 -2px 0 var(--accent-ring); }
+  .seg b { font-weight: 600; color: var(--tx-2); margin-left: 2px; }
+  .log-item { margin-bottom: 6px; padding: 8px 10px 8px 12px; background: var(--bg-app); border: 1px solid var(--line); border-left: 3px solid var(--tx-4); border-radius: var(--r-md); cursor: pointer; transition: background var(--t), border-color var(--t); }
+  .log-item:hover { background: var(--bg-raised); border-color: var(--line-strong); }
+  .log-item.err { border-left-color: var(--bad); } .log-item.warn { border-left-color: var(--warn); } .log-item.info { border-left-color: var(--tx-3); }
+  .log-item.nolink { cursor: default; }
+  .log-msg { color: var(--tx-1); font-size: 12.5px; line-height: 1.4; }
+  .log-code { margin-top: 6px; padding: 4px 6px; font-family: var(--mono); font-size: 11px; color: var(--tx-2); background: var(--bg-input); border: 1px solid var(--line); border-radius: var(--r-sm); overflow-x: auto; white-space: pre; }
+  .log-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: 11px; color: var(--tx-3); }
+  .log-tag { padding: 0 5px; font-size: 10.5px; font-weight: 600; border-radius: var(--r-sm); background: var(--bg-raised); border: 1px solid var(--line-strong); color: var(--tx-2); }
+  .log-empty { padding: 26px 12px; text-align: center; border: 1px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--tx-3); }
+  .log-empty b { display: block; margin-bottom: 2px; font-size: 13px; color: var(--tx-1); }
+  .log-foot { margin-top: 10px; font-size: 11px; color: var(--tx-4); }
+  .node[data-issue]::after { content: '!'; position: absolute; right: 5px; bottom: 5px; width: 15px; height: 15px; border-radius: 50%; font-size: 10px; font-weight: 800; line-height: 15px; text-align: center; color: #fff; background: var(--bad); pointer-events: none; }
+  .node[data-issue="warn"]::after { background: var(--warn); color: #000; }
+
+  /* Projects dialog */
+  .proj-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding: 8px 10px; background: var(--bg-app); border: 1px solid var(--line); border-radius: var(--r-md); }
+  .proj-row.current { border-color: var(--line-strong); box-shadow: inset 3px 0 0 var(--accent-ring); }
+  .proj-row .pname { flex: 1; min-width: 0; }
+  .proj-name { padding: 2px 6px; font-weight: 600; background: transparent; border-color: transparent; }
+  .proj-name:hover { border-color: var(--line-strong); }
+  .proj-meta { padding-left: 7px; font-size: 11px; color: var(--tx-3); }
+  .proj-badge { padding: 1px 8px; font-size: 10.5px; font-weight: 700; border-radius: var(--r-sm); background: var(--accent); color: #000; }
 </style>
 </head>
 
@@ -287,6 +347,8 @@
   <div class="brand">
     <img class="brand-logo" src="data:image/png;base64,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" alt="Arbor Studio">
     <span class="brand-name">Arbor Studio</span>
+    <span class="crumb-sep">/</span>
+    <button class="proj-chip" id="btnProjects" title="Switch, create or delete projects"><span class="name" id="projName">Project</span><span class="caret">▾</span></button>
   </div>
   <div class="flex-1"></div>
   <button class="btn" id="btnImport">⭳ Import Tree Data</button>
@@ -312,6 +374,8 @@
 
     <div class="rail-label">Simulate</div>
     <button class="btn" id="btnSim" title="Live-test buying upgrades (see Settings → Play mode)">▶ Test</button>
+    <button class="btn" id="btnRunSave" title="Pause and save where you are in the current run">💾 Save run</button>
+    <button class="btn" id="btnRunLoad" title="Carry on from a saved run">📂 Load run</button>
 
     <div class="rail-grow"></div>
     <div class="rail-label">Project</div>
@@ -368,6 +432,10 @@
     <div class="tabs">
       <button class="tab active" data-tab="inspector">Node</button>
       <button class="tab" data-tab="currencies">Currencies</button>
+      <button class="tab" data-tab="log">Log<span class="tab-count" id="logCount" hidden></span></button>
+      <button class="tab-more" id="tabMore" aria-haspopup="true" aria-expanded="false">More ▾</button>
+    </div>
+    <div class="tab-menu" id="tabMenu" role="menu">
       <button class="tab" data-tab="vars">Variables</button>
       <button class="tab" data-tab="vfx">VFX</button>
       <button class="tab" data-tab="settings">Settings</button>
@@ -376,6 +444,7 @@
     <div class="panel-body">
       <div id="tab-inspector"></div>
       <div id="tab-currencies" style="display:none"></div>
+      <div id="tab-log" style="display:none"></div>
       <div id="tab-vars" style="display:none"></div>
       <div id="tab-vfx" style="display:none"></div>
       <div id="tab-settings" style="display:none"></div>
@@ -429,13 +498,34 @@
           Costs/rates accept <code>1e6</code> and suffixes: K, M, B, T, Qa (=Qd), Qi, Sx, Sp, Oc, No, Dc.
         </div>
         <div>
-          <b class="text-slate-200">Simulate Play</b><br>
+          <b class="text-slate-200">Log, projects &amp; run saves</b><br>
+          <b>Log</b> checks the whole tree as you edit: <i>Syntax</i> (formulas that can't be read), <i>Logic</i> (unknown names, missing currencies, upgrades that can never be bought) and <i>Runtime</i> (problems that appear while a Test run is going). Click an entry to jump to the node; nodes with a problem show a small dot. <b>Projects</b> (top bar, next to the name) are separate trees you can switch between at any time. <b>Save run</b> pauses and saves your progress to a file; <b>Load run</b> picks it up again later.
+        </div>
+        \1<br>
           States: <b>Locked</b> (grey, parents not owned) → <b>Available</b> (glows when affordable) → <b>Owned / Maxed</b>. Click an available node to buy it. Dragging is disabled while simulating. Your work autosaves in this browser.
         </div>
       </div>
     </div>
   </aside>
 </div>
+</div>
+
+<!-- ======================= PROJECTS DIALOG ======================= -->
+<div id="projModal" class="overlay" data-ui>
+  <div class="modal-card w-full p-4 flex flex-col gap-3" style="max-width:540px;max-height:90vh">
+    <div class="flex items-center justify-between">
+      <h2 class="font-semibold text-lg">Projects</h2>
+      <button class="icon-btn" id="pClose" title="Close">✕</button>
+    </div>
+    <p class="hint">Each project is its own upgrade tree, saved automatically in this app. Switch whenever you like — the project you leave is saved first.</p>
+    <div id="pList" class="overflow-y-auto min-h-0" style="max-height:46vh"></div>
+    <div class="row" style="margin:0">
+      <input class="inp" id="pNewName" placeholder="New project name" maxlength="60">
+      <button class="btn primary" id="pNewBlank">＋ Blank</button>
+      <button class="btn" id="pNewExample">From example</button>
+    </div>
+    <div id="pMsg" class="text-sm"></div>
+  </div>
 </div>
 
 <datalist id="dl-cur"></datalist>
@@ -641,13 +731,39 @@ function evalAst(a, v) {
         : a[1] === '>' ? +(x > y) : a[1] === '<' ? +(x < y) : a[1] === '>=' ? +(x >= y) : a[1] === '<=' ? +(x <= y) : a[1] === '==' ? +(x === y) : a[1] === '!=' ? +(x !== y) : a[1] === '&&' ? +(!!x && !!y) : +(!!x || !!y); }
   }
 }
+/* ---------- LOG state (declared early so evalFormula can report into it) ---------- */
+const RT = { map: new Map(), dirty: false, seq: 0 };      // problems seen while a run is active (deduplicated, with a counter)
+const LOG = { issues: [], sites: new Map(), flagged: new Set(), filter: 'all', checkedAt: 0, formulas: 0, nodes: 0, timer: 0, rtSig: '' };
+let curTab = 'inspector';
+function rtAdd(key, base) {
+  let x = RT.map.get(key);
+  if (!x) { if (RT.map.size >= 200) return; x = Object.assign({ uid: ++RT.seq, n: 0, t: sim.time || 0 }, base); RT.map.set(key, x); }
+  x.n++; RT.dirty = true;
+}
+function rtNote(src, msg, sev) {                          // a formula misbehaved during a run
+  if (!sim.active) return;
+  const s = String(src ?? '').trim(); if (LOG.flagged.has(s)) return;      // the static check already reported this one
+  rtAdd('formula\0' + s + '\0' + msg, { kind: 'formula', src: s, msg, sev });
+}
+function rtScript(where, e) {                             // an exception in the app itself
+  rtAdd('script\0' + where + '\0' + ((e && e.message) || e), { kind: 'script', where, msg: (e && e.message) || String(e), sev: 'error' });
+}
+function rtReset() { RT.map.clear(); RT.dirty = true; }
 const fCache = new Map();
 function compileFormula(src) {
   src = String(src ?? '').trim(); let c = fCache.get(src);
   if (!c) { try { c = { ast: parseFormula(src) }; } catch (e) { c = { error: e.message }; } if (fCache.size > 500) fCache.clear(); fCache.set(src, c); }
   return c;
 }
-function evalFormula(src, vars) { const c = compileFormula(src); if (c.error) return NaN; try { const v = evalAst(c.ast, vars); return typeof v === 'number' ? v : NaN; } catch (e) { return NaN; } }
+function evalFormula(src, vars) {
+  const c = compileFormula(src); if (c.error) return NaN;           // syntax errors are reported by the Log's validator
+  try {
+    const v = evalAst(c.ast, vars);
+    if (typeof v !== 'number') { rtNote(src, 'Did not produce a number.', 'error'); return NaN; }
+    if (!Number.isFinite(v)) rtNote(src, Number.isNaN(v) ? 'Returned NaN (not a number) while running.' : 'Returned ∞ while running (overflow or divide by zero).', 'warn');
+    return v;
+  } catch (e) { rtNote(src, e.message, 'error'); return NaN; }
+}
 function formulaError(src) {
   const c = compileFormula(src); if (c.error) return c.error;
   try { const v = baseVars(); v.level = v.progress = v.need = 1; evalAst(c.ast, v); return ''; } catch (e) { return e.message; }
@@ -1079,7 +1195,7 @@ function renderVfx() {
   }
   $('tab-vfx').innerHTML = h;
 }
-function simError(where, e) { console.error(e); const m = where + ': ' + e.message; if (sim.lastErr !== m) { sim.lastErr = m; toast('Simulation error (' + m + ')', 'error'); } }
+function simError(where, e) { console.error(e); rtScript('Simulation · ' + where, e); const m = where + ': ' + e.message; if (sim.lastErr !== m) { sim.lastErr = m; toast('Simulation error (' + m + ')', 'error'); } }
 function tickBoards(dt) {
   for (const n of Object.values(state.nodes)) {
     if (n.type !== 'board' || !boardUnlocked(n)) continue;
@@ -1293,16 +1409,16 @@ function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); res
 function updateUndoButtons() { $('btnUndo').disabled = !undoStack.length; $('btnRedo').disabled = !redoStack.length; }
 
 let saveTimer = 0;
-function save() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { try { if (settings.autosave) localStorage.setItem(STORAGE_KEY, JSON.stringify(exportData())); } catch (e) { /* storage may be blocked */ } }, 300);
+function save() {                                                  // called after every edit: autosave (debounced) + re-validate
+  clearTimeout(saveTimer); saveTimer = setTimeout(() => flushSave(), 300); scheduleValidate();
 }
-function loadSaved() {
+function loadSaved() {                                             // loads the open project (see section 10 for projects)
+  initProjects();
+  const raw = store.get(projKey(projects.current)); if (!raw) return false;
   try {
-    const s = localStorage.getItem(STORAGE_KEY); if (!s) return false;
-    const t = parseTree(JSON.parse(s));
+    const t = parseTree(JSON.parse(raw));
     state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; return true;
-  } catch (e) { return false; }
+  } catch (e) { setTimeout(() => toast('The open project could not be read, so the example was loaded instead.', 'error', 6000), 300); return false; }
 }
 
 /* ---------- 5. RENDERING ---------- */
@@ -1554,7 +1670,9 @@ function setTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   if (name === 'vars') renderVars();
   if (name === 'vfx') renderVfx();
-  ['inspector', 'currencies', 'vars', 'vfx', 'settings', 'help'].forEach(t => $('tab-' + t).style.display = t === name ? '' : 'none');
+  if (name === 'log') renderLog();
+  ['inspector', 'currencies', 'log', 'vars', 'vfx', 'settings', 'help'].forEach(t => $('tab-' + t).style.display = t === name ? '' : 'none');
+  curTab = name; closeTabMenu(); syncMoreTab(name);
 }
 
 /* ---------- 6. EDITING ACTIONS ---------- */
@@ -1796,7 +1914,7 @@ function resetSim() {
   sim.rates = computeRates();
 }
 function startSim() {
-  ensureSimCurrencies(); resetSim();
+  rtReset(); ensureSimCurrencies(); resetSim();
   sim.active = true; sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.infinite = false; sim.speed = settings.playMode ? 1 : settings.speed;
   sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10));
   if (state.tool === 'connect') setTool('select');
@@ -1862,7 +1980,7 @@ function renderHudMain() {
       <b class="text-sm">Simulation</b>
       <button class="btn small" data-sim="toggle">${sim.running ? '⏸ Pause' : '▶ Resume'}</button>
       <select class="inp" style="width:auto;padding:2px 4px;font-size:12px${playLocked() ? ';display:none' : ''}" data-sim="speed">${[1, 5, 20, 100].map(v => `<option value="${v}" ${sim.speed === v ? 'selected' : ''}>${v}×</option>`).join('')}</select>
-      <button class="btn small" data-sim="reset">Reset</button></div>
+      <button class="btn small" data-sim="reset">Reset</button><button class="btn small" data-sim="save" title="Pause and save this run">💾 Save</button></div>
     ${state.currencies.map((c, i) => `<div class="flex items-center gap-2 text-sm mb-1">
       <span class="flex-1 truncate">${esc(c.name)}</span><b id="hb-${i}">0</b><span id="hr-${i}" class="text-xs text-slate-400 w-16 text-right"></span>
       <button class="btn small" data-sim="boost" data-ci="${i}" title="Cheat: ×10 + 100"${playLocked() || !settings.cheats ? ' style="display:none"' : ''}>⚡</button></div>`).join('') || '<div class="hint">No currencies yet — add some in the Currencies tab.</div>'}
@@ -2077,6 +2195,7 @@ $('hud').addEventListener('click', e => {
   const a = b.dataset.sim;
   if (a === 'toggle') { sim.running = !sim.running; sim.last = performance.now(); renderHud(); }
   else if (a === 'reset') { resetSim(); refreshSimNodes(); renderEdges(); updateHud(); }
+  else if (a === 'save') openRunModal('runSave');
   else if (a === 'boost' && !playLocked() && settings.cheats) { const c = state.currencies[+b.dataset.ci]; if (c) { sim.balances[c.name] = (sim.balances[c.name] || 0) * 10 + 100; updateHud(); refreshSimNodes(); } }
 });
 $('hud').addEventListener('change', e => { if (e.target.dataset.sim === 'speed') sim.speed = playLocked() ? 1 : (Number(e.target.value) || 1); });
@@ -2166,10 +2285,522 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('resize', applyView);
 
+/* =========================================================================
+   10. TAB MENU · LOG (validation + runtime) · PROJECTS · RUN SAVES
+   ========================================================================= */
+
+/* ---------- Tabs: three primary tabs plus a "More" menu for the rest ---------- */
+const SECOND_TABS = { vars: 'Variables', vfx: 'VFX', settings: 'Settings', help: 'Help' };
+const tabMore = $('tabMore'), tabMenu = $('tabMenu');
+function closeTabMenu() { tabMenu.classList.remove('open'); tabMore.classList.remove('open'); tabMore.setAttribute('aria-expanded', 'false'); }
+function syncMoreTab(name) {                                   // the More button shows which hidden tab is open
+  const label = SECOND_TABS[name];
+  tabMore.classList.toggle('active', !!label); tabMore.textContent = (label || 'More') + ' ▾';
+}
+tabMore.onclick = () => {
+  const open = !tabMenu.classList.contains('open');
+  tabMenu.classList.toggle('open', open); tabMore.classList.toggle('open', open); tabMore.setAttribute('aria-expanded', String(open));
+};
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#tabMenu, #tabMore')) closeTabMenu(); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && tabMenu.classList.contains('open')) { closeTabMenu(); e.stopPropagation(); } }, true);
+
+/* ---------- Log: static validation ----------
+   Walks the whole tree and returns a list of problems. Each problem has:
+     sev  'error' | 'warn' | 'info'      cat  'syntax' | 'logic'
+   Syntax = a formula that can't be parsed. Logic = it parses, but something doesn't add up
+   (unknown name, missing currency, a node that can never be bought…).
+   Formulas are test-run with sample values (currencies = 1K and 1B) so name errors show up without playing. */
+const clock = t => { t = Math.max(0, Math.floor(t || 0)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+function validateTree() {
+  const out = [], sites = new Map(), flagged = new Set(); let formulas = 0;
+  const nodes = Object.values(state.nodes), trim = s => String(s ?? '').trim();
+  const add = (sev, cat, msg, o = {}) => out.push({
+    sev, cat, msg, tab: o.tab || '', code: o.code || '', id: o.id || '',
+    where: o.id ? (o.where ? `${o.id} · ${o.where}` : o.id) : (o.where || ''),
+  });
+
+  // Two sample environments to test formulas against: modest balances, and huge ones.
+  const mkEnv = big => {
+    const v = baseVars(), set = (k, x) => { if (k) try { v[k] = x; } catch (e) { /* read-only name */ } };
+    state.currencies.forEach(c => { set(ident(c.name), big ? 1e9 : 1e3); set(ident(normName(c.name)), big ? 1e9 : 1e3); });
+    nodes.forEach(n => set(ident(n.id), big ? 10 : 1));
+    set('time', big ? 3600 : 60); return v;
+  };
+  const envA = mkEnv(false), envB = mkEnv(true);
+
+  // Checks one formula. Returns its value (NaN if it has a problem). `o.extra` adds variables such as progress/need.
+  const check = (src, id, where, o = {}) => {
+    src = trim(src);
+    if (!src) { if (o.required) add('error', 'syntax', 'This formula is empty.', { id, where, tab: o.tab }); return NaN; }
+    formulas++; (sites.get(src) || sites.set(src, []).get(src)).push({ id, label: where });
+    const c = compileFormula(src);
+    if (c.error) { add('error', 'syntax', c.error, { id, where, tab: o.tab, code: src }); flagged.add(src); return NaN; }
+    const run = env => { const v = Object.create(env); v.level = 1; if (o.extra) Object.assign(v, o.extra); return evalAst(c.ast, v); };
+    let a, b;
+    try { a = run(envA); b = run(envB); }
+    catch (e) { add('error', 'logic', e.message, { id, where, tab: o.tab, code: src }); flagged.add(src); return NaN; }
+    if (!Number.isFinite(a) && !Number.isFinite(b)) {
+      add('warn', 'logic', `Never produces a real number (${Number.isNaN(a) ? 'NaN' : '∞'}) — look for a divide-by-zero or a square root of a negative.`, { id, where, tab: o.tab, code: src });
+      flagged.add(src); return NaN;
+    }
+    return a;
+  };
+  const tokens = pat => trim(pat).split(',').map(trim).filter(Boolean);
+  const patCheck = (pat, n, label) => tokens(pat).forEach(t => {
+    const f = idMatcher(t); if (!nodes.some(x => f(x.id))) add('warn', 'logic', `“${t}” matches no nodes.`, { id: n.id, where: label });
+  });
+  const effectChecks = (list, n, label) => list.forEach((e, i) => {
+    const where = `${label} ${i + 1}`, mod = trim(e.modifier); if (!mod && !trim(e.target)) return;
+    const p = parseEffect(e);
+    if (!p) {
+      if (/^[x×*+^]/.test(mod)) add('warn', 'logic', `“${mod}” has no target currency, so it does nothing.`, { id: n.id, where });
+      else if (!trim(e.target) && /[\d()*^\/+-]/.test(mod) && !compileFormula(mod).error) add('warn', 'logic', `“${mod}” looks like a formula but has no Target currency, so it does nothing.`, { id: n.id, where });
+      return;
+    }
+    if (p.formula) check(p.expr, n.id, where);
+    else if (p.kind === 'mul' && p.value <= 0) add('warn', 'logic', `A multiplier of ×${p.value} would zero out ${p.target}.`, { id: n.id, where });
+    if (!findCurrency(p.target)) add('warn', 'logic', `Targets “${p.target}”, which isn't in the Currencies tab (it will be added automatically when you test).`, { id: n.id, where });
+  });
+
+  // ----- currencies & variables -----
+  const seenCur = new Set();
+  state.currencies.forEach((c, i) => {
+    const nm = trim(c.name), k = normName(nm), where = nm || `Currency ${i + 1}`;
+    if (!nm) add('error', 'logic', `Currency ${i + 1} has no name.`, { tab: 'currencies', where });
+    else if (seenCur.has(k)) add('error', 'logic', `Two currencies share the name “${nm}” (names ignore capitals and a trailing “s”).`, { tab: 'currencies', where });
+    seenCur.add(k);
+  });
+  if (!state.currencies.length && nodes.length) add('warn', 'logic', 'There are no currencies — they will be created from your node costs when you test.', { tab: 'currencies', where: 'Currencies' });
+  const nodeIdents = new Set(nodes.map(n => ident(n.id))), curIdents = new Set(state.currencies.flatMap(c => [ident(c.name), ident(normName(c.name))]));
+  const seenVar = new Set();
+  G().forEach((g, i) => {
+    const k = ident(g.name), where = `Variable ${g.name || i + 1}`;
+    if (!k) add('error', 'logic', 'A variable has no usable name.', { tab: 'vars', where });
+    else {
+      if (seenVar.has(k)) add('error', 'logic', `Variable “${g.name}” is defined twice.`, { tab: 'vars', where });
+      seenVar.add(k);
+      if (nodeIdents.has(k) || curIdents.has(k) || k === 'time' || k === 'level')
+        add('warn', 'logic', `“${g.name}” has the same name as ${k === 'time' || k === 'level' ? 'a built-in' : 'a node or currency'}, and that takes priority — the variable is never used.`, { tab: 'vars', where });
+    }
+    check(g.value, '', where, { tab: 'vars', required: true });
+  });
+
+  // ----- links: dangling parents and loops -----
+  const color = {}; let loop = null;
+  const dfs = id => {
+    color[id] = 1;
+    for (const p of state.nodes[id].parents) { if (!state.nodes[p]) continue; if (color[p] === 1) loop = loop || [p, id]; else if (!color[p]) dfs(p); }
+    color[id] = 2;
+  };
+  nodes.forEach(n => { if (!color[n.id]) dfs(n.id); });
+  if (loop) add('error', 'logic', `The link ${loop[0]} → ${loop[1]} forms a loop, so those nodes can never unlock.`, { id: loop[1], where: 'Links' });
+
+  // ----- per-node checks -----
+  const hasChild = new Set(); nodes.forEach(n => n.parents.forEach(p => hasChild.add(p)));
+  for (const n of nodes) {
+    const id = n.id, T = n.type;
+    n.parents.forEach(p => { if (!state.nodes[p]) add('error', 'logic', `Parent “${p}” doesn't exist.`, { id, where: 'Links' }); });
+    if (nodes.length > 1 && !n.parents.length && !hasChild.has(id)) add('info', 'logic', 'Not connected to any other node.', { id, where: 'Links' });
+
+    if (!['board', 'achievement', 'challenge'].includes(T)) for (const c of n.costs) {
+      const nm = trim(c.currency);
+      if (!nm) { add('warn', 'logic', 'A cost has no currency chosen.', { id, where: 'Costs' }); continue; }
+      if (!findCurrency(nm)) add('warn', 'logic', `Costs “${nm}”, which isn't in the Currencies tab (it will be added automatically when you test).`, { id, where: 'Costs' });
+      if (!Number.isFinite(c.amount) || c.amount < 0) add('error', 'logic', `The ${nm} cost must be a number of 0 or more.`, { id, where: 'Costs' });
+    }
+    if (!n.costs.length && ['normal', 'repeatable', 'unlock', 'auto', 'autoperm'].includes(T)) add('info', 'logic', 'No cost set — this upgrade is free.', { id, where: 'Costs' });
+    if (T === 'repeatable' && !(n.costGrowth >= 1)) add('warn', 'logic', `Cost growth is ${n.costGrowth} (below 1), so every level gets cheaper.`, { id, where: 'Repeatable' });
+    if (!n.effects.some(e => trim(e.modifier) || trim(e.target)) && ['normal', 'repeatable'].includes(T)) add('info', 'logic', 'Has no effects, so buying it changes nothing.', { id, where: 'Effects' });
+
+    effectChecks(n.effects, n, 'Effect');
+    if (n.vfx && !(state.vfx || []).some(v => v.name === n.vfx)) add('warn', 'logic', `VFX “${n.vfx}” no longer exists.`, { id, where: 'VFX' });
+
+    if (T === 'board') {
+      const d = n.board;
+      if (!trim(d.source)) add('info', 'logic', 'No currency chosen, so the board has no progress bar.', { id, where: 'Board' });
+      else if (!findCurrency(d.source)) add('warn', 'logic', `Board currency “${d.source}” isn't in the Currencies tab.`, { id, where: 'Board' });
+      const need = check(d.req, id, 'Requirement', { required: true, extra: { level: d.startLevel } });
+      if (Number.isFinite(need) && !(need > 0)) add('warn', 'logic', `The requirement is ${fmt(need)} at level ${d.startLevel}, so the board can never level up.`, { id, where: 'Requirement', code: trim(d.req) });
+      d.lines.forEach((l, i) => check(l.formula, id, `Line ${i + 1}`, { extra: { level: d.startLevel, progress: 1, need: 2 } }));
+    }
+    if (T === 'rebirth') {
+      const t = rebirthTarget(n);
+      check(t.expr, id, 'Rebirth gain', { required: true });
+      if (!t.cur) add('error', 'logic', 'Rebirth has no valid target currency — write “name = formula” or pick one.', { id, where: 'Rebirth' });
+      tokens(n.rebirth.keep).forEach(k => { if (!findCurrency(k)) add('warn', 'logic', `Keep-currency “${k}” doesn't exist.`, { id, where: 'Rebirth' }); });
+      patCheck(n.rebirth.reset, n, 'Reset scope');
+    }
+    if (T === 'achievement' || T === 'challenge') {
+      if (!trim(n.cond)) add('warn', 'logic', `This ${T} has no condition, so it can never complete.`, { id, where: 'Condition' });
+      else check(n.cond, id, 'Condition');
+      if (T === 'challenge') { effectChecks(n.penalty, n, 'Penalty'); patCheck(n.chReset, n, 'Reset IDs'); }
+    }
+    if (T === 'auto' || T === 'autoperm') {
+      if (!trim(n.auto.ids)) add('warn', 'logic', 'No IDs to buy, so this automation does nothing.', { id, where: 'Automation' });
+      else patCheck(n.auto.ids, n, 'Automation IDs');
+    }
+    if (n.retype && trim(n.retype.ids)) patCheck(n.retype.ids, n, 'Type change');
+    if (n.blocks && trim(n.blocks.ids)) { patCheck(n.blocks.ids, n, 'Blocks'); patCheck(n.blocks.until, n, 'Blocks until'); }
+    (n.disables || []).forEach((d, i) => { if (!trim(d.ids)) add('warn', 'logic', 'A disable rule has no IDs, so it affects nothing.', { id, where: `Disable rule ${i + 1}` }); else patCheck(d.ids, n, `Disable rule ${i + 1}`); });
+  }
+
+  // ----- reachability: can each node ever be owned? -----
+  // Grows the set of ownable nodes until nothing changes: a node needs its parents, and every cost must be
+  // affordable at the start or produced by something already ownable. Deliberately conservative.
+  const startOf = nm => { const c = findCurrency(nm); return c ? c.start : 0; };
+  const produces = new Set(state.currencies.filter(c => c.rate > 0).map(c => normName(c.name)));
+  const canOwn = new Set();
+  const ownIssue = n => {
+    if (n.type === 'achievement' || n.type === 'challenge') return trim(n.cond) ? '' : 'it has no condition';
+    if (n.type === 'board') return '';
+    for (const c of n.costs) {
+      const nm = trim(c.currency); if (!nm || !(c.amount > 0) || c.amount <= startOf(nm) || produces.has(normName(nm))) continue;
+      return `it costs ${fmt(c.amount)} ${nm}, but nothing produces ${nm}`;
+    }
+    return '';
+  };
+  for (let pass = 0, again = true; again && pass < nodes.length + 2; pass++) {
+    again = false;
+    for (const n of nodes) {
+      if (canOwn.has(n.id)) continue;
+      const ps = n.parents, ok = !ps.length || (n.requires === 'any' ? ps.some(p => canOwn.has(p)) : ps.every(p => canOwn.has(p)));
+      if (!ok || ownIssue(n)) continue;
+      canOwn.add(n.id); again = true;
+      if (n.type === 'rebirth') { const t = rebirthTarget(n); if (t.cur) produces.add(normName(t.cur.name)); continue; }
+      n.effects.forEach(e => { const p = parseEffect(e); if (p && p.kind === 'add') produces.add(normName(p.target)); });
+    }
+  }
+  for (const n of nodes) {
+    if (canOwn.has(n.id)) continue;
+    const own = ownIssue(n);
+    if (own) { add('warn', 'logic', `Can never be unlocked: ${own}.`, { id: n.id, where: 'Reachability' }); continue; }
+    const bad = n.parents.filter(p => !canOwn.has(p));
+    add('info', 'logic', bad.length ? `Can never unlock, because ${bad.join(', ')} can never be owned.` : 'Can never unlock — its parents can never all be owned.', { id: n.id, where: 'Reachability' });
+  }
+  if (!nodes.length) add('info', 'logic', 'The tree has no nodes yet. Press N or use “Add Node” to start.');
+
+  const rank = { error: 0, warn: 1, info: 2 };
+  out.sort((a, b) => rank[a.sev] - rank[b.sev]);              // stable: errors first, original order kept inside each group
+  return { issues: out, sites, flagged, formulas, nodes: nodes.length };
+}
+
+function runValidation() {
+  clearTimeout(LOG.timer);
+  let r;
+  try { r = validateTree(); }
+  catch (e) { console.error(e); r = { issues: [{ sev: 'error', cat: 'runtime', msg: 'The validator crashed: ' + e.message, where: '', id: '', tab: '', code: '' }], sites: new Map(), flagged: new Set(), formulas: 0, nodes: 0 }; }
+  Object.assign(LOG, { issues: r.issues, sites: r.sites, flagged: r.flagged, formulas: r.formulas, nodes: r.nodes, checkedAt: Date.now() });
+  paintIssues(); updateLogBadge(); if (curTab === 'log') renderLog();
+}
+function scheduleValidate() { clearTimeout(LOG.timer); LOG.timer = setTimeout(runValidation, 250); }
+
+function paintIssues() {                                       // small red/amber dot on nodes that have a problem
+  const worst = {};
+  for (const i of LOG.issues) { if (!i.id || i.sev === 'info') continue; if (!worst[i.id] || i.sev === 'error') worst[i.id] = i.sev; }
+  for (const id in els) { if (worst[id]) els[id].dataset.issue = worst[id] === 'error' ? 'error' : 'warn'; else delete els[id].dataset.issue; }
+}
+
+/* ---------- Log: runtime entries + rendering ---------- */
+function rtEntries() {
+  const out = [];
+  RT.map.forEach(x => {
+    if (x.kind === 'script') { out.push({ sev: 'error', cat: 'runtime', msg: x.msg, where: x.where, id: '', tab: '', code: '', n: x.n, t: x.t, uid: x.uid }); return; }
+    const sites = LOG.sites.get(x.src) || [], first = sites.find(s => s.id && state.nodes[s.id]);
+    const label = s => s.id ? `${s.id} · ${s.label}` : s.label;
+    const where = sites.length ? sites.slice(0, 2).map(label).join(', ') + (sites.length > 2 ? ` +${sites.length - 2} more` : '') : 'a formula';
+    out.push({ sev: x.sev, cat: 'runtime', msg: x.msg, where, id: first ? first.id : '', tab: !first && sites.length ? 'vars' : '', code: x.src, n: x.n, t: x.t, uid: x.uid });
+  });
+  return out;
+}
+function updateLogBadge() {
+  const all = LOG.issues.concat(rtEntries()), e = all.filter(i => i.sev === 'error').length, w = all.filter(i => i.sev === 'warn').length, b = $('logCount');
+  b.hidden = !(e || w); b.className = 'tab-count ' + (e ? 'err' : 'warn'); b.textContent = e || w;
+  b.title = `${plural(e, 'error')}, ${plural(w, 'warning')}`;
+}
+function renderLog() {
+  const el = $('tab-log'); if (!el) return;
+  const all = LOG.issues.concat(rtEntries()), f = LOG.filter, shown = all.filter(i => f === 'all' || i.cat === f);
+  const n = { error: 0, warn: 0, info: 0 }; all.forEach(i => n[i.sev]++);
+  const cnt = c => all.filter(i => i.cat === c).length;
+  const SEVL = { error: 'Error', warn: 'Warning', info: 'Note' }, CATL = { syntax: 'Syntax', logic: 'Logic', runtime: 'Runtime' };
+  const row = i => {
+    const link = i.id && state.nodes[i.id] ? `data-goto-node="${esc(i.id)}"` : i.tab ? `data-goto-tab="${i.tab}"` : '';
+    return `<div class="log-item ${i.sev === 'error' ? 'err' : i.sev}${link ? '' : ' nolink'}" ${link ? link + ' role="button" tabindex="0"' : ''}>
+      <div class="log-msg">${esc(i.msg)}</div>${i.code ? `<div class="log-code">${esc(i.code)}</div>` : ''}
+      <div class="log-meta"><span class="log-tag">${SEVL[i.sev]}</span><span class="log-tag">${CATL[i.cat]}</span>${i.where ? `<span>${esc(i.where)}</span>` : ''}${i.n ? `<span data-rtk="${i.uid}">×${i.n}</span>` : ''}${i.cat === 'runtime' && i.t != null ? `<span>first at ${clock(i.t)}</span>` : ''}</div></div>`;
+  };
+  const empty = f === 'runtime' ? '<b>No runtime errors</b>Start a Test run — anything that goes wrong while it runs will show up here.'
+    : f === 'all' ? '<b>✓ No problems found</b>Your tree passed every check.' : `<b>Nothing under ${CATL[f]}</b>`;
+  el.innerHTML = `<div class="log-sum">
+      ${n.error ? `<span class="pill err">${plural(n.error, 'error')}</span>` : ''}${n.warn ? `<span class="pill warn">${plural(n.warn, 'warning')}</span>` : ''}${n.info ? `<span class="pill info">${plural(n.info, 'note')}</span>` : ''}${!all.length ? '<span class="pill ok">All clear</span>' : ''}
+      <span class="flex-1"></span>${RT.map.size ? '<button class="btn small" data-lact="clearrt" title="Forget the runtime entries">Clear runtime</button>' : ''}<button class="btn small" data-lact="recheck">↻ Re-check</button></div>
+    <div class="seg">${[['all', 'All', all.length], ['syntax', 'Syntax', cnt('syntax')], ['logic', 'Logic', cnt('logic')], ['runtime', 'Runtime', cnt('runtime')]]
+      .map(([k, t, c]) => `<button data-lf="${k}" class="${f === k ? 'on' : ''}">${t} <b>${c}</b></button>`).join('')}</div>
+    ${shown.length ? shown.map(row).join('') : `<div class="log-empty">${empty}</div>`}
+    <div class="log-foot">Checked ${plural(LOG.formulas, 'formula')} across ${plural(LOG.nodes, 'node')}${LOG.checkedAt ? ' at ' + new Date(LOG.checkedAt).toLocaleTimeString() : ''}. Click an entry to jump to it.</div>`;
+  LOG.rtSig = [...RT.map.values()].map(x => x.uid).join(',');
+}
+setInterval(() => {                                            // runtime entries arrive while the sim ticks; update gently
+  if (!RT.dirty) return; RT.dirty = false; updateLogBadge();
+  const sig = [...RT.map.values()].map(x => x.uid).join(',');
+  if (curTab !== 'log') return;
+  if (sig !== LOG.rtSig) renderLog();                          // new/removed entry: redraw
+  else RT.map.forEach(x => { const s = document.querySelector(`[data-rtk="${x.uid}"]`); if (s) s.textContent = '×' + x.n; });   // just bump counters so clicks aren't lost
+}, 600);
+function goNode(id) {                                          // select a node and centre it on screen
+  const n = state.nodes[id]; if (!n) return;
+  select(id); const r = viewport.getBoundingClientRect(), v = state.view;
+  v.x = r.width / 2 - (n.x + NW / 2) * v.k; v.y = r.height / 2 - (n.y + NH / 2) * v.k; applyView();
+}
+$('tab-log').addEventListener('click', e => {
+  const lf = e.target.closest('[data-lf]'); if (lf) { LOG.filter = lf.dataset.lf; renderLog(); return; }
+  const a = e.target.closest('[data-lact]');
+  if (a) { if (a.dataset.lact === 'recheck') { runValidation(); toast('Re-checked the tree.', 'ok', 1200); } else { rtReset(); updateLogBadge(); renderLog(); } return; }
+  const g = e.target.closest('[data-goto-node]'); if (g) { goNode(g.dataset.gotoNode); return; }
+  const t = e.target.closest('[data-goto-tab]'); if (t) setTab(t.dataset.gotoTab);
+});
+$('tab-log').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.log-item[role=button]')) { e.preventDefault(); e.target.click(); } });
+window.addEventListener('error', ev => rtScript('Script error' + (ev.lineno ? ` (line ${ev.lineno})` : ''), ev.error || ev.message));
+window.addEventListener('unhandledrejection', ev => rtScript('Unhandled promise', ev.reason));
+
+/* ---------- Projects ----------
+   Every project is its own tree. Storage layout (all in the browser's local storage):
+     upgradeTreeDesigner.projects.v1        -> { current, list: [{ id, name, created, updated, nodes }] }
+     upgradeTreeDesigner.project.<id>       -> that project's tree (same JSON as Export Tree Data)
+   The old single-tree key is imported once as "My tree" and left untouched as a backup. */
+const PROJ_INDEX_KEY = 'upgradeTreeDesigner.projects.v1', PROJ_PREFIX = 'upgradeTreeDesigner.project.';
+const memStore = new Map();                                    // used only if the browser blocks local storage
+const store = {
+  get(k) { try { const v = localStorage.getItem(k); if (v !== null) return v; } catch (e) { /* blocked */ } return memStore.has(k) ? memStore.get(k) : null; },
+  set(k, v) { try { localStorage.setItem(k, v); memStore.delete(k); } catch (e) { memStore.set(k, v); } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } memStore.delete(k); },
+};
+let projects = { current: '', list: [] };
+const uid = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const projMeta = id => projects.list.find(p => p.id === id);
+const projKey = id => PROJ_PREFIX + id;
+const writeIndex = () => store.set(PROJ_INDEX_KEY, JSON.stringify(projects));
+function initProjects() {
+  try { const o = JSON.parse(store.get(PROJ_INDEX_KEY) || 'null'); if (o && Array.isArray(o.list)) projects = { current: o.current, list: o.list.filter(p => p && p.id && typeof p.name === 'string') }; } catch (e) { /* start fresh */ }
+  if (!projects.list.length) {
+    const legacy = store.get(STORAGE_KEY), id = uid(), now = Date.now();
+    projects = { current: id, list: [{ id, name: legacy ? 'My tree' : 'Example tree', created: now, updated: now, nodes: 0 }] };
+    if (legacy) store.set(projKey(id), legacy);
+    writeIndex();
+  }
+  if (!projMeta(projects.current)) projects.current = projects.list[0].id;
+}
+function flushSave(force) {                                    // write the open project now (force = even if autosave is off)
+  clearTimeout(saveTimer); saveTimer = 0;
+  if (!projects.current || !(settings.autosave || force)) return;
+  try {
+    const data = exportData(), m = projMeta(projects.current);
+    store.set(projKey(projects.current), JSON.stringify(data));
+    if (m) { m.updated = Date.now(); m.nodes = data.nodes.length; writeIndex(); }
+  } catch (e) { /* storage full or blocked */ }
+}
+window.addEventListener('beforeunload', () => flushSave());
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+
+function uniqueName(base, except) {
+  base = String(base || '').trim().slice(0, 60) || 'Untitled project'; let n = base, i = 2;
+  while (projects.list.some(p => p.id !== except && p.name.toLowerCase() === n.toLowerCase())) n = `${base} ${i++}`;
+  return n;
+}
+function resetEditorState() {                                  // nothing from the old project may leak into the new one
+  undoStack.length = 0; redoStack.length = 0; lastUndoKey = null; multi = new Set(); updateMultiLabel();
+  searchQ = ''; $('search').value = ''; $('searchCount').textContent = ''; rtReset();
+}
+function createProject(name, tree) {                           // saves the current project, then opens a new one built from `tree`
+  flushSave(true); if (sim.active) stopSim();
+  const id = uid(), now = Date.now();
+  projects.list.push({ id, name: uniqueName(name), created: now, updated: now, nodes: 0 }); projects.current = id; writeIndex();
+  resetEditorState(); applyTree(tree); flushSave(true); renderProjectChip(); renderProjects();
+  return id;
+}
+function switchProject(id) {
+  if (id === projects.current || !projMeta(id)) return false;
+  let t; try { t = parseTree(JSON.parse(store.get(projKey(id)))); } catch (e) { toast('That project could not be read.', 'error'); return false; }
+  flushSave(true); if (sim.active) stopSim();                  // the project you're leaving is always saved first
+  projects.current = id; writeIndex();
+  resetEditorState(); applyTree(t); renderProjectChip(); renderProjects();
+  toast(`Opened “${projMeta(id).name}”`, 'ok', 1800);
+  return true;
+}
+function duplicateProject(id) {
+  if (id === projects.current) flushSave(true);
+  const raw = store.get(projKey(id)), m = projMeta(id); if (!raw || !m) return;
+  const nid = uid(), now = Date.now();
+  store.set(projKey(nid), raw);
+  projects.list.push({ id: nid, name: uniqueName(m.name + ' copy'), created: now, updated: now, nodes: m.nodes }); writeIndex(); renderProjects();
+  toast('Project duplicated.', 'ok', 1800);
+}
+function deleteProject(id) {
+  const m = projMeta(id); if (!m) return;
+  if (id === projects.current) {
+    const other = projects.list.find(p => p.id !== id);
+    if (other) { if (!switchProject(other.id)) return; }
+    else createProject('My tree', parseTree({ currencies: [{ name: 'Points', start: 10, rate: 1 }], nodes: [] }));   // never leave the app with zero projects
+  }
+  projects.list = projects.list.filter(p => p.id !== id); store.del(projKey(id)); writeIndex(); renderProjects();
+  toast(`Deleted “${m.name}”.`, 'info', 2200);
+}
+function renameProject(id, raw) {
+  const m = projMeta(id), nm = String(raw).trim(); if (!m || !nm || nm === m.name) return;
+  m.name = uniqueName(nm, id); writeIndex(); renderProjectChip();
+}
+function renderProjectChip() { const m = projMeta(projects.current); $('projName').textContent = m ? m.name : 'Project'; }
+
+const ago = ts => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 45 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' d ago'; };
+let armedDel = '', armedTimer = 0;                              // delete needs a second click within 3 seconds
+function renderProjects() {
+  const box = $('pList'); if (!box) return;
+  box.innerHTML = projects.list.map(p => {
+    const cur = p.id === projects.current, count = cur ? Object.keys(state.nodes).length : (p.nodes || 0);
+    return `<div class="proj-row${cur ? ' current' : ''}" data-pid="${esc(p.id)}">
+      <div class="pname"><input class="inp proj-name" data-pname value="${esc(p.name)}" maxlength="60" aria-label="Project name"><div class="proj-meta">${plural(count, 'node')} · ${cur ? 'open now' : 'edited ' + ago(p.updated)}</div></div>
+      ${cur ? '<span class="proj-badge">Open</span>' : '<button class="btn small primary" data-pact="open">Open</button>'}
+      <button class="btn small" data-pact="dup" title="Make a copy of this project">Duplicate</button>
+      <button class="btn small danger" data-pact="del">${armedDel === p.id ? 'Confirm?' : 'Delete'}</button></div>`;
+  }).join('');
+}
+function openProjects() { if (playLocked()) return; $('pNewName').value = ''; $('pMsg').textContent = ''; $('projModal').style.display = 'flex'; renderProjects(); }
+function closeProjects() { $('projModal').style.display = 'none'; armedDel = ''; }
+$('btnProjects').onclick = openProjects;
+$('pClose').onclick = closeProjects;
+$('projModal').addEventListener('pointerdown', e => { if (e.target === $('projModal')) closeProjects(); });
+$('pList').addEventListener('click', e => {
+  const b = e.target.closest('[data-pact]'); if (!b) return;
+  const id = b.closest('[data-pid]').dataset.pid, a = b.dataset.pact;
+  if (a === 'open') { if (switchProject(id)) closeProjects(); }
+  else if (a === 'dup') duplicateProject(id);
+  else if (a === 'del') {
+    if (armedDel === id) { armedDel = ''; clearTimeout(armedTimer); deleteProject(id); }
+    else { armedDel = id; clearTimeout(armedTimer); armedTimer = setTimeout(() => { armedDel = ''; renderProjects(); }, 3000); renderProjects(); }
+  }
+});
+$('pList').addEventListener('change', e => { if (e.target.matches('[data-pname]')) { renameProject(e.target.closest('[data-pid]').dataset.pid, e.target.value); renderProjects(); } });
+$('pList').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-pname]')) e.target.blur(); });
+const newFromModal = kind => {
+  const name = $('pNewName').value.trim() || (kind === 'example' ? 'Example tree' : 'Untitled project');
+  createProject(name, parseTree(kind === 'example' ? EXAMPLE : { currencies: [{ name: 'Points', start: 10, rate: 1 }], nodes: [] }));
+  closeProjects(); toast(`Created “${projMeta(projects.current).name}”`, 'ok', 1800);
+};
+$('pNewBlank').onclick = () => newFromModal('blank');
+$('pNewExample').onclick = () => newFromModal('example');
+$('pNewName').addEventListener('keydown', e => { if (e.key === 'Enter') newFromModal('blank'); });
+window.addEventListener('keydown', e => {                      // while the dialog is open, shortcuts must not reach the tree behind it
+  if ($('projModal').style.display !== 'flex') return;
+  if (e.key === 'Escape') { closeProjects(); e.stopPropagation(); }
+  else if (!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) e.stopPropagation();
+}, true);
+
+/* ---------- Run saves: pause a run, save it, leave, and pick it up later ---------- */
+const RUN_FORMAT = 'arbor-studio-run';
+function treeSignature() {                                     // changes when costs/effects/etc. change, but not when nodes are merely moved
+  const d = exportData(); d.nodes.forEach(n => { delete n.x; delete n.y; });
+  const s = JSON.stringify(d); let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(16);
+}
+function buildRunSave() {
+  const fin = v => Number.isFinite(v) ? v : null, m = projMeta(projects.current);
+  const levels = {}; for (const [id, lv] of Object.entries(sim.levels)) if (lv > 0 && state.nodes[id]) levels[id] = lv;
+  const balances = {}; state.currencies.forEach(c => { balances[c.name] = fin(balanceOf(c.name)); });
+  const boards = {}; for (const [id, b] of Object.entries(sim.boards)) boards[id] = { level: b.level, progress: fin(b.progress) };
+  return {
+    format: RUN_FORMAT, version: 1, savedAt: new Date().toISOString(),
+    project: { name: m ? m.name : '' }, signature: treeSignature(),
+    run: { time: sim.time, levels, balances, boards, challenge: sim.challenge || null },
+    tree: exportData(),                                        // so the save can always be restored exactly, even if the tree is edited later
+  };
+}
+function parseRunText(text) {                                  // accepts a run file, or the older base64 code from the Dev panel
+  text = String(text || '').trim(); if (!text) throw new Error('Nothing to load — choose a file or paste the save text.');
+  let o;
+  if (text[0] === '{') { try { o = JSON.parse(text); } catch (e) { throw new Error('That text is not valid JSON.'); } }
+  else { try { o = { format: RUN_FORMAT, legacy: true, run: JSON.parse(decodeURIComponent(escape(atob(text)))) }; } catch (e) { throw new Error('That is not a run save.'); } }
+  if (!o || o.format !== RUN_FORMAT || !o.run || typeof o.run !== 'object') throw new Error('That is not an Arbor Studio run save.');
+  return o;
+}
+function applyRun(run) {
+  const skipped = [];
+  if (sim.active) resetSim(); else startSim();
+  const levels = {}; for (const [id, v] of Object.entries(run.levels || {})) {
+    const n = state.nodes[id]; if (!n) { skipped.push(id); continue; }
+    const L = Math.floor(numOr(v, 0)); if (L > 0) levels[id] = Math.min(L, maxLevelOf(n));
+  }
+  const balances = {}; state.currencies.forEach(c => { balances[c.name] = c.start; });
+  for (const [name, v] of Object.entries(run.balances || {})) {
+    const c = findCurrency(name); if (!c) { skipped.push(name); continue; }
+    if (typeof v === 'number' && Number.isFinite(v)) balances[c.name] = v;
+  }
+  const boards = {}; for (const [id, b] of Object.entries(run.boards || {})) {
+    const n = state.nodes[id]; if (!n || n.type !== 'board' || !b) { skipped.push(id); continue; }
+    boards[id] = { level: Math.max(0, Math.floor(numOr(b.level, 0))), progress: Math.max(0, numOr(b.progress, 0)) };
+  }
+  sim.levels = levels; sim.balances = balances; sim.boards = boards; sim.autoT = {};
+  sim.time = Math.max(0, numOr(run.time, 0));
+  sim.challenge = run.challenge && state.nodes[run.challenge] && state.nodes[run.challenge].type === 'challenge' ? run.challenge : null;
+  sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.rates = computeRates(); fullRender();
+  toast(skipped.length ? `Run loaded — skipped ${plural(skipped.length, 'entry')} that no longer exist (${skipped.slice(0, 4).join(', ')}${skipped.length > 4 ? '…' : ''}).` : `Run loaded — back at ${clock(sim.time)}.`, skipped.length ? 'info' : 'ok', skipped.length ? 7000 : 3000);
+}
+function downloadText(name, text) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function openRunModal(mode) {                                  // re-uses the Import/Export dialog
+  const ta = $('mText'), msg = $('mMsg'), btns = $('mBtns');
+  msg.textContent = ''; msg.className = 'text-sm'; msg.style.color = ''; btns.innerHTML = '';
+  const add = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.onclick = fn; btns.appendChild(b); return b; };
+  if (mode === 'runSave') {
+    if (!sim.active) { toast('Start a run first (Test / Play), then save it.', 'info'); return; }
+    sim.running = false; renderHud();                          // pause so the file matches what's on screen
+    const save = buildRunSave(), text = JSON.stringify(save), owned = Object.keys(save.run.levels).length;
+    $('mTitle').textContent = 'Save run';
+    $('mDesc').textContent = `Paused at ${clock(sim.time)} with ${plural(owned, 'upgrade')} owned. Download the file (or copy the text), then use Load run to carry on later — even after closing Arbor Studio. It includes a copy of the tree, so it can always be restored exactly.`;
+    ta.readOnly = false; ta.value = text; ta.readOnly = true;
+    add('Download file', 'primary', () => {
+      const d = new Date(), p = x => String(x).padStart(2, '0'), slug = (save.project.name || 'run').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'run';
+      downloadText(`arbor-run-${slug}-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`, text);
+      msg.className = 'text-sm text-green-400'; msg.textContent = 'Saved. The run stays paused — close this window and press Resume to keep playing.';
+    });
+    add('Copy text', '', async () => {
+      try { await navigator.clipboard.writeText(text); } catch (e) { ta.select(); document.execCommand('copy'); }
+      msg.className = 'text-sm text-green-400'; msg.textContent = 'Copied to the clipboard.';
+    });
+    add('Close', '', closeModal);
+  } else {
+    $('mTitle').textContent = 'Load run';
+    $('mDesc').textContent = 'Choose a saved run file (or paste its text) to carry on where you left off.' + (sim.active ? ' This replaces the run in progress.' : '');
+    ta.readOnly = false; ta.value = ''; ta.placeholder = '{ "format": "arbor-studio-run", … }';
+    add('Choose file…', '', () => $('mFile').click());
+    add('Load run', 'primary', () => {
+      let o; try { o = parseRunText(ta.value); } catch (e) { msg.className = 'text-sm text-red-400'; msg.textContent = e.message; return; }
+      if (o.legacy || o.signature === treeSignature()) { closeModal(); applyRun(o.run); return; }
+      btns.innerHTML = ''; msg.className = 'text-sm'; msg.style.color = 'var(--warn)';          // saved from a different version of the tree
+      msg.textContent = `This run was saved from a different version of the tree${o.project && o.project.name ? ' (“' + o.project.name + '”)' : ''}. Loading it into the current tree skips anything that no longer exists.`;
+      add('Load into current tree', 'primary', () => { closeModal(); applyRun(o.run); });
+      if (o.tree && !playLocked()) add('Restore its tree as a new project', '', () => {
+        try { const t = parseTree(o.tree); closeModal(); createProject(`${(o.project && o.project.name) || 'Imported'} (run)`, t); applyRun(o.run); }
+        catch (e) { msg.className = 'text-sm text-red-400'; msg.style.color = ''; msg.textContent = 'The tree inside this save could not be read.'; }
+      });
+      add('Cancel', '', closeModal);
+    });
+    add('Cancel', '', closeModal);
+  }
+  $('modal').style.display = 'flex';
+  if (mode === 'runLoad') ta.focus();
+}
+$('btnRunSave').onclick = () => openRunModal('runSave');
+$('btnRunLoad').onclick = () => openRunModal('runLoad');
+
 /* ----- Boot ----- */
 (function init() {
   if (!loadSaved()) { const t = parseTree(EXAMPLE); state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; }
-  fullRender(); fitView();
+  fullRender(); fitView(); renderProjectChip(); runValidation();
 })();
 $('tab-settings').addEventListener('change', e => {
   const k = e.target.dataset.set; if (!k) return;
