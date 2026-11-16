@@ -161,7 +161,7 @@
   /* nodes: --c is the type colour; border style also differs per type so types read without colour */
   .node {
     --c: #38bdf8;
-    position: absolute; left: 0; top: 0; width: 200px; height: 128px; box-sizing: border-box;
+    position: absolute; left: 0; top: 0; width: var(--nw, 200px); height: var(--nh, 128px); box-sizing: border-box;
     padding: 8px 10px; border-radius: var(--r-lg); background: var(--bg-raised); color: var(--tx-2);
     border: 2px solid var(--c); cursor: grab; overflow: hidden;
     display: flex; flex-direction: column; gap: 3px;
@@ -353,6 +353,171 @@
   body.perf-lite .edge.flow { animation: none; stroke-dasharray: none; }
   /* "Skip off-screen nodes": the browser doesn't lay out or paint nodes you can't see */
   body.perf-cull .node { content-visibility: auto; contain-intrinsic-size: 200px 128px; }
+
+  /* ---- 7. v2: toolbar · View menu · density · node detail · tool windows ---- */
+  :root { --nw: 200px; --nh: 128px; --heat-g: #34d399; --heat-y: #facc15; --heat-r: #ef4444; --heat-p: #a855f7; }
+  .node { width: var(--nw); height: var(--nh); }
+  body.perf-cull .node { contain-intrinsic-size: var(--nw) var(--nh); }
+  .rail .ic { display: inline-block; min-width: 1.1em; text-align: center; }
+
+  /* tools toolbar */
+  .toolbar { height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: var(--bg-panel); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+  .toolbar::-webkit-scrollbar { display: none; }
+  .tb-group { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .tb-sep { width: 1px; height: 18px; background: var(--line-strong); margin: 0 4px; flex-shrink: 0; }
+  .tb-inp { width: 76px; font-family: var(--mono); } .tb-sel { width: auto; padding: 3px 4px; }
+  .tb-lbl { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--tx-3); }
+  .tb-clock { font: 600 12.5px var(--mono); color: var(--tx-1); min-width: 52px; text-align: center; padding: 0 4px; }
+  .tb-next { font-size: 12px; color: var(--tx-2); cursor: pointer; padding: 3px 8px; border-radius: var(--r-md); border: 1px solid transparent; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .tb-next:hover { background: var(--bg-raised); border-color: var(--line-strong); color: var(--tx-1); }
+  .tb-next:empty { display: none; }
+  .tb-busy { display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 320px; }
+  .tb-prog { flex: 1; height: 6px; border-radius: 4px; background: var(--bg-input); border: 1px solid var(--line-strong); overflow: hidden; min-width: 120px; }
+  .tb-prog i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .tb-busy span { font: 12px var(--mono); color: var(--tx-2); }
+
+  /* View menu */
+  .popmenu { position: fixed; z-index: 55; width: 330px; max-height: calc(100vh - 80px); overflow-y: auto; padding: 12px 14px 14px; display: none; background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 16px 40px rgba(0,0,0,.6); }
+  .popmenu.open { display: block; }
+  .vk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  .vk-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--tx-2); cursor: pointer; }
+  .vk-note { margin-top: -4px; min-height: 18px; }
+  .vm-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+  .popmenu .seg { margin-bottom: 8px; }
+
+  /* density (Comfortable = the original sizes) */
+  body[data-density="compact"] { font-size: 12px; }
+  body[data-density="compact"] .topbar { height: 40px; padding: 0 8px 0 12px; }
+  body[data-density="compact"] .brand-logo { width: 28px; height: 28px; }
+  body[data-density="compact"] .toolbar { height: 34px; }
+  body[data-density="compact"] .rail { width: 164px; padding: 8px; }
+  body[data-density="compact"] .rail-label { margin: 10px 4px 4px; }
+  body[data-density="compact"] .btn { padding: 3px 8px; font-size: 12px; }
+  body[data-density="compact"] .inspector { width: 312px; }
+  body[data-density="compact"] .tab, body[data-density="compact"] .tab-more { padding: 8px 8px 7px; font-size: 11.5px; }
+  body[data-density="compact"] .tab-menu { top: 34px; }
+  body[data-density="compact"] .panel-body { padding: 10px; }
+  body[data-density="compact"] .lbl { margin: 10px 0 4px; }
+  body[data-density="compact"] .inp { padding: 3px 7px; font-size: 12px; }
+  body[data-density="compact"] .card { padding: 8px; }
+  body[data-density="minimal"] { font-size: 11.5px; }
+  body[data-density="minimal"] .topbar { height: 34px; padding: 0 6px 0 10px; gap: 6px; }
+  body[data-density="minimal"] .brand-logo { width: 22px; height: 22px; }
+  body[data-density="minimal"] .brand-name { display: none; }
+  body[data-density="minimal"] .toolbar { height: 30px; padding: 0 8px; }
+  body[data-density="minimal"] .toolbar .btn .lb { display: none; }
+  body[data-density="minimal"] .btn { padding: 2px 7px; font-size: 11.5px; }
+  body[data-density="minimal"] .rail { width: 46px; padding: 8px 5px; align-items: stretch; }
+  body[data-density="minimal"] .rail .lb, body[data-density="minimal"] .rail-label { display: none; }
+  body[data-density="minimal"] .rail .btn { justify-content: center; padding: 6px 0; }
+  body[data-density="minimal"] .rail-pair { flex-direction: column; }
+  body[data-density="minimal"] .rail-check { justify-content: center; padding: 6px 0; }
+  body[data-density="minimal"] .inspector { width: 280px; }
+  body[data-density="minimal"] .tab, body[data-density="minimal"] .tab-more { padding: 6px 7px 5px; font-size: 11px; }
+  body[data-density="minimal"] .tab-menu { top: 28px; }
+  body[data-density="minimal"] .panel-body { padding: 8px; }
+  body[data-density="minimal"] .lbl { margin: 8px 0 3px; font-size: 10px; }
+  body[data-density="minimal"] .inp { padding: 2px 6px; font-size: 11.5px; }
+  body[data-density="minimal"] .glass.legend { display: none; }
+
+  /* node cards: Compact hides the description, Title only keeps just the header */
+  body[data-nodes="compact"] .node .n-desc, body[data-nodes="compact"] .node .n-id { display: none; }
+  body[data-nodes="compact"] .node { gap: 4px; }
+  body[data-nodes="minimal"] .node > :not(.n-head) { display: none; }
+  body[data-nodes="minimal"] .node { justify-content: center; padding-top: 0; padding-bottom: 0; }
+  body[data-nodes="minimal"] .node[data-issue]::after { right: 3px; bottom: 3px; }
+
+  .playing #toolbar, .playing .tool-win { pointer-events: none; opacity: .4; }
+
+  /* bottleneck colours on the canvas */
+  .n-heat { display: none; }
+  #viewport.heat-on .n-heat { display: inline-block; font: 700 10.5px var(--mono); padding: 1px 6px; border-radius: var(--r-sm); background: var(--hc); color: #0a0a0a; white-space: nowrap; }
+  #viewport.heat-on .node[data-heat] { --hc: var(--heat-g); border-color: var(--hc); border-style: solid; background: color-mix(in srgb, var(--hc) 14%, #0a0a0a); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hc) 28%, transparent); filter: none; opacity: 1; }
+  #viewport.heat-on .node[data-heat="y"] { --hc: var(--heat-y); }
+  #viewport.heat-on .node[data-heat="r"] { --hc: var(--heat-r); }
+  #viewport.heat-on .node[data-heat="p"] { --hc: var(--heat-p); background: color-mix(in srgb, var(--hc) 10%, #0a0a0a); }
+  #viewport.heat-on .node[data-heat="u"] { --hc: #737373; }
+
+  /* tool windows + docked tabs */
+  #toolLayer { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
+  .tool-win { position: absolute; display: none; flex-direction: column; min-width: 300px; min-height: 200px; resize: both; overflow: hidden; pointer-events: auto; background: var(--bg-panel); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.65); }
+  .tw-head, .tw-dockbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+  .tw-head { cursor: move; user-select: none; touch-action: none; }
+  .tw-title, .tw-dockbar b { font-weight: 600; color: var(--tx-1); font-size: 13px; }
+  .tw-dockbar { padding-left: 0; margin-bottom: 10px; }
+  .tw-body { flex: 1 1 0%; min-height: 0; overflow-y: auto; padding: 12px 14px 14px; }
+  [id^="tab-"] .tw-body { padding: 0; overflow: visible; }
+  .tb-shell > * + * { margin-top: 8px; }
+  .tb-live { margin-top: 10px; position: relative; }
+  .tw-body .seg { margin-bottom: 0; }
+
+  /* timeline */
+  .tl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tl-evrow { gap: 12px; }
+  .tl-sel { width: auto; padding: 3px 4px; }
+  .tl-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--tx-2); cursor: pointer; }
+  .tl-key { display: inline-block; width: 9px; height: 9px; flex-shrink: 0; }
+  .tl-buy { border-radius: 50%; background: #fafafa; } .tl-unlock { border-radius: 50%; border: 2px solid #a78bfa; } .tl-afford { background: #fbbf24; transform: rotate(45deg) scale(.85); } .tl-reset { width: 2px; background: #f87171; }
+  .tl-runs { display: flex; flex-direction: column; gap: 2px; }
+  .tl-run { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .tl-runname { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; color: var(--tx-1); cursor: pointer; }
+  .tl-runname i { width: 12px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+  .tl-foot { margin-top: 2px; }
+  .tl-chart { position: relative; touch-action: none; }
+  .tl-chart svg { display: block; }
+  .tl-grid { stroke: var(--line); stroke-width: 1; } .tl-ax { fill: var(--tx-3); font: 10.5px var(--mono); }
+  .tl-cross { stroke: var(--tx-3); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+  .tl-tip, .hm-tip { position: absolute; z-index: 3; pointer-events: none; padding: 6px 9px; font-size: 11.5px; line-height: 1.5; color: var(--tx-1); background: var(--bg-raised); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: 0 6px 18px rgba(0,0,0,.5); white-space: nowrap; }
+  .tl-tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .tl-tipev { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line-strong); }
+  .tl-listhead { margin: 6px 0 4px; }
+  .tl-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
+  .tl-ev { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 10px; font-size: 12px; text-align: left; color: var(--tx-2); border-bottom: 1px solid var(--line); }
+  .tl-ev:last-child { border-bottom: 0; } .tl-ev:hover { background: var(--bg-raised); color: var(--tx-1); }
+  .tl-ev .truncate { flex: 1; min-width: 0; } .tl-t { font: 600 11.5px var(--mono); color: var(--tx-1); min-width: 52px; }
+
+  /* time to afford */
+  .af-head { padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--line-strong); border-radius: var(--r-lg); background: var(--bg-app); }
+  .af-big { font: 600 18px var(--mono); color: var(--tx-1); letter-spacing: -.01em; } .af-big.ok, .af-eta.ok, .ms-t .ok { color: var(--ok); }
+  .af-row { padding: 9px 11px; margin-bottom: 6px; background: var(--bg-app); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; }
+  .af-row:hover { border-color: var(--line-strong); background: var(--bg-raised); } .af-row.locked { opacity: .78; }
+  .af-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .af-name { color: var(--tx-1); font-weight: 600; font-size: 12.5px; min-width: 0; } .af-eta { font: 600 14px var(--mono); color: var(--tx-1); } .af-eta.bad, .ms-t .bad { color: var(--bad); }
+  .af-bar { height: 4px; margin: 6px 0; border-radius: 3px; background: var(--bg-input); overflow: hidden; } .af-bar i { display: block; height: 100%; background: var(--tx-2); }
+  .af-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 11.5px; color: var(--tx-2); } .af-line.worst > span:first-child { color: var(--warn); }
+  .af-rate { font-family: var(--mono); color: var(--tx-3); } .af-src { flex-basis: 100%; color: var(--tx-3); } .af-src b { color: var(--tx-2); font-weight: 600; }
+  .af-lock { margin-top: 4px; font-size: 11px; color: var(--tx-3); } .af-foot { margin-top: 8px; }
+
+  /* bottleneck panel (a card in the spirit of the activity-heatmap reference) */
+  .hm-top { display: flex; align-items: center; gap: 10px; }
+  .hm-pill { width: auto; border-radius: 10px; padding: 5px 10px; }
+  .hm-canvas { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .hm-dots { width: 30px; height: 30px; border: 1px solid var(--line-strong); border-radius: 10px; color: var(--tx-1); font-size: 16px; line-height: 1; } .hm-dots:hover { background: var(--bg-hover); }
+  .hm-cfg { padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg-app); }
+  .hm-num { width: 60px; } .hm-cfg .row { margin: 8px 0 4px; flex-wrap: wrap; }
+  .hm-grid, .hm-labels { display: grid; gap: 6px; }
+  .hm-grid { margin-top: 4px; } .hm-labels { margin-top: 8px; font-size: 11px; color: var(--tx-3); text-align: center; }
+  .hm-cell { height: 26px; border-radius: 7px; border: 0; } .hm-gap { height: 26px; }
+  .hm-cell:hover { outline: 2px solid var(--tx-1); outline-offset: 1px; }
+  .hm-g { background: var(--heat-g); } .hm-y { background: var(--heat-y); } .hm-r { background: var(--heat-r); } .hm-p { background: var(--heat-p); } .hm-u { background: #737373; }
+  .hm-legend { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 16px 0 14px; }
+  .hm-legend i { width: 22px; height: 12px; border-radius: 4px; display: inline-block; } .hm-sep { width: 14px; }
+  .hm-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .hm-val { font: 600 20px var(--mono); color: var(--tx-1); margin: 2px 0 4px; }
+  .hm-badge { display: inline-block; padding: 1px 7px; font-size: 11px; border-radius: 5px; background: var(--bg-hover); color: var(--tx-2); }
+  .hm-badge.bad { background: #3a1517; color: #ff9b96; } .hm-badge.purple { background: #2a1840; color: #d2a8ff; }
+
+  /* milestones */
+  .ms-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .ms-table th { text-align: left; padding: 4px 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tx-3); border-bottom: 1px solid var(--line-strong); }
+  .ms-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--tx-1); }
+  .ms-table tr.go { cursor: pointer; } .ms-table tr.go:hover { background: var(--bg-raised); }
+  .ms-table tr.miss td { color: var(--tx-3); } .ms-t { font-family: var(--mono); white-space: nowrap; }
+  .ms-add { border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 10px 8px; background: var(--bg-app); }
+  .ms-add summary { cursor: pointer; font-size: 12px; color: var(--tx-2); } .ms-add .row { margin-top: 8px; }
+
+  @media (max-width: 1700px) { #tbTools .lb { display: none; } }
+  body[data-density="minimal"] .rail .btn.danger { font-size: 9.5px; padding: 6px 0; }
 </style>
 </head>
 
@@ -368,31 +533,58 @@
     <button class="proj-chip" id="btnProjects" title="Switch, create or delete projects"><span class="name" id="projName">Project</span><span class="caret">▾</span></button>
   </div>
   <div class="flex-1"></div>
+  <button class="btn" id="btnView" title="Layout presets, density and tools">◫ View ▾</button>
   <button class="btn" id="btnImport">⭳ Import Tree Data</button>
   <button class="btn primary" id="btnExport">⭱ Export Tree Data</button>
   <button class="btn" id="btnPanel" title="Show/hide side panel">☰</button>
 </header>
 
+<!-- ======================= TOOLS TOOLBAR (hide it from View) ======================= -->
+<div id="toolbar" class="toolbar" data-ui>
+  <div class="tb-group" id="tbTimeGroup">
+    <button class="btn small" id="tbPlay" title="Start, pause or resume the simulation">▶ Start</button>
+    <button class="btn small" id="tbTick" title="Step forward by one tick (1 ÷ updates per second)">⏭ <span class="lb">Tick</span></button>
+    <span class="tb-clock" id="tbClock" title="Elapsed simulation time">0:00</span>
+    <button class="btn small" data-adv="1" title="Advance exactly 1 second">+1s</button>
+    <button class="btn small" data-adv="60" title="Advance exactly 1 minute">+1m</button>
+    <button class="btn small" data-adv="3600" title="Advance exactly 1 hour">+1h</button>
+    <button class="btn small" data-adv="86400" title="Advance exactly 1 day">+1d</button>
+    <span class="tb-sep"></span>
+    <input id="tbCustom" class="inp tb-inp" value="1h" title="Duration, e.g. 90, 5m, 1h30m, 2d or 01:30:00" aria-label="Custom duration">
+    <select id="tbMode" class="inp tb-sel" title="Advance by this much, or run until this total time"><option value="by">Advance by</option><option value="to">Run until</option></select>
+    <button class="btn small" id="tbGo">Go</button>
+    <span class="tb-sep"></span>
+    <button class="btn small" id="tbEnd" title="Auto-play a fresh run until nothing more can be reached">⏩ <span class="lb">Run to end</span></button>
+    <button class="btn small" id="tbRestart" title="Restart the run. The previous run is kept for comparison.">↺ <span class="lb">Restart</span></button>
+  </div>
+  <div id="tbBusy" class="tb-busy" style="display:none"><div class="tb-prog"><i id="tbProg"></i></div><span id="tbBusyTxt"></span><button class="btn small" id="tbCancel" title="Esc">Cancel</button></div>
+  <span class="tb-sep"></span>
+  <label class="tb-lbl">Player <select id="tbBot" class="inp tb-sel" title="Who buys upgrades while time passes"><option value="off">Manual</option><option value="cheapest">Auto-buy</option></select></label>
+  <span id="tbNext" class="tb-next"></span>
+  <div class="flex-1"></div>
+  <div class="tb-group" id="tbTools"></div>
+</div>
+
 <div class="shell">
 
   <!-- ======================= LEFT RAIL (tools &amp; secondary actions) ======================= -->
-  <nav class="rail" data-ui>
+  <nav class="rail" id="rail" data-ui>
     <div class="rail-label">Build</div>
-    <button class="btn primary" id="btnAdd" title="Add node (N)">＋ Add Node</button>
-    <button class="btn" id="btnConnect" title="Click a parent, then a child (C)">🔗 Connect</button>
-    <label class="rail-check"><input type="checkbox" id="chkSnap" checked> Snap to grid</label>
+    <button class="btn primary" id="btnAdd" title="Add node (N)"><span class="ic">＋</span><span class="lb">Add Node</span></button>
+    <button class="btn" id="btnConnect" title="Click a parent, then a child (C)"><span class="ic">🔗</span><span class="lb">Connect</span></button>
+    <label class="rail-check"><input type="checkbox" id="chkSnap" checked> <span class="lb">Snap to grid</span></label>
 
     <div class="rail-label">History &amp; view</div>
     <div class="rail-pair">
-      <button class="btn flex-1" id="btnUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
-      <button class="btn flex-1" id="btnRedo" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>
+      <button class="btn flex-1" id="btnUndo" title="Undo (Ctrl+Z)"><span class="ic">↶</span><span class="lb">Undo</span></button>
+      <button class="btn flex-1" id="btnRedo" title="Redo (Ctrl+Shift+Z)"><span class="ic">↷</span><span class="lb">Redo</span></button>
     </div>
-    <button class="btn" id="btnFit" title="Fit all nodes in view (F)">⤢ Fit to view</button>
+    <button class="btn" id="btnFit" title="Fit all nodes in view (F)"><span class="ic">⤢</span><span class="lb">Fit to view</span></button>
 
     <div class="rail-label">Simulate</div>
-    <button class="btn" id="btnSim" title="Live-test buying upgrades (see Settings → Play mode)">▶ Test</button>
-    <button class="btn" id="btnRunSave" title="Pause and save where you are in the current run">💾 Save run</button>
-    <button class="btn" id="btnRunLoad" title="Carry on from a saved run">📂 Load run</button>
+    <button class="btn" id="btnSim" title="Live-test buying upgrades (see Settings → Play mode)"><span class="ic">▶</span><span class="lb">Test</span></button>
+    <button class="btn" id="btnRunSave" title="Pause and save where you are in the current run"><span class="ic">💾</span><span class="lb">Save run</span></button>
+    <button class="btn" id="btnRunLoad" title="Carry on from a saved run"><span class="ic">📂</span><span class="lb">Load run</span></button>
 
     <div class="rail-grow"></div>
     <div class="rail-label">Project</div>
@@ -419,14 +611,14 @@
     </div>
 
     <!-- Hint banner (top centre) -->
-    <div class="glass absolute top-3 left-3 flex items-center gap-2 px-2 py-1" data-ui><input id="search" class="inp" style="width:230px" placeholder="🔍 Search ID, name, effect, #tag…"><span id="searchCount" class="hint"></span><span id="multiCount" class="hint" style="color:var(--accent-hover)"></span></div>
+    <div id="searchBox" class="glass absolute top-3 left-3 flex items-center gap-2 px-2 py-1" data-ui><input id="search" class="inp" style="width:230px" placeholder="🔍 Search ID, name, effect, #tag…"><span id="searchCount" class="hint"></span><span id="multiCount" class="hint" style="color:var(--accent-hover)"></span></div>
     <div id="hint" class="glass absolute top-3 left-half -translate-x-half px-3 py-1 text-xs text-slate-300 pointer-events-none" style="display:none"></div>
 
     <!-- HUD (bottom-left): simulation panel + legend -->
     <div id="hud" class="absolute left-3 bottom-3 flex flex-col gap-2 max-w-hud" data-ui>
       <div id="devBox" class="glass p-3" style="display:none"></div>
       <div id="simBox" class="glass p-3" style="display:none"></div>
-      <div class="glass legend px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
+      <div id="legendBox" class="glass legend px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
         <span><span class="swatch" style="--c:#38bdf8"></span> Normal</span>
         <span><span class="swatch" style="--c:#34d399;border-style:dashed"></span> Repeatable</span>
         <span><span class="swatch" style="--c:#a78bfa;border-style:double;border-width:4px"></span> Unlock</span>
@@ -437,7 +629,7 @@
     </div>
 
     <!-- Zoom controls (bottom-right) -->
-    <div class="glass absolute right-3 bottom-3 flex items-center gap-1 p-1" data-ui>
+    <div id="zoomBox" class="glass absolute right-3 bottom-3 flex items-center gap-1 p-1" data-ui>
       <span id="status" class="text-xs text-slate-400 px-2"></span>
       <button class="btn small" id="zOut">−</button>
       <button class="btn small" id="zReset" title="Reset zoom to 100%">100%</button>
@@ -466,6 +658,10 @@
       <div id="tab-vars" style="display:none"></div>
       <div id="tab-vfx" style="display:none"></div>
       <div id="tab-settings" style="display:none"></div>
+      <div id="tab-timeline" style="display:none" data-tool="timeline"></div>
+      <div id="tab-afford" style="display:none" data-tool="afford"></div>
+      <div id="tab-heatmap" style="display:none" data-tool="heatmap"></div>
+      <div id="tab-milestones" style="display:none" data-tool="milestones"></div>
       <div id="tab-help" style="display:none" class="hint space-y-3">
         <div>
           <b class="text-slate-200">Navigation</b><br>
@@ -546,6 +742,12 @@
   </div>
 </div>
 
+<div id="viewMenu" class="popmenu" data-ui>
+  <div id="viewMenuBody"></div>
+  <div class="lbl">Tools</div><div class="vm-tools" id="viewMenuTools"></div>
+  <div class="row mt-3" style="margin-bottom:0"><button class="btn small" id="vmReset">Reset layout</button></div>
+</div>
+<div id="toolLayer" data-ui></div>
 <datalist id="dl-cur"></datalist>
 <div id="toasts" class="fixed bottom-16 left-half -translate-x-half z-toast flex flex-col gap-2 items-center" data-ui></div>
 
@@ -580,7 +782,7 @@
    ========================================================================= */
 
 /* ---------- 1. CONSTANTS & HELPERS ---------- */
-const NW = 200, NH = 128, GRID = 20;               // node size (px) and grid step in world units
+let NW = 200, NH = 128; const GRID = 20;               // node size (px) and grid step in world units
 const TYPES = {
   normal:     { label: 'Normal',           icon: '◆', color: '#38bdf8' },
   repeatable: { label: 'Repeatable',       icon: '↻', color: '#34d399' },
@@ -598,7 +800,9 @@ const SUFFIX_VALUES = { k:1e3, m:1e6, b:1e9, t:1e12, qa:1e15, qd:1e15, qi:1e18, 
 const STORAGE_KEY = 'upgradeTreeDesigner.v1';
 /* ---------- SETTINGS (stored separately from the tree) ---------- */
 const SETTINGS_KEY = 'upgradeTreeDesigner.settings.v1';
-const SETTING_DEFAULTS = { playMode: false, cheats: true, speed: 1, locked: 'show', buyMax: 'shift', buyMaxIds: '', tickRate: 10, fx: true, lineShape: 'curve', lineFx: 'none', perf: 'quality', drawEvery: 1, lite: false, cull: false, perfHud: false, snap: true, hint: true, autosave: true };
+const SETTING_DEFAULTS = { playMode: false, cheats: true, speed: 1, locked: 'show', buyMax: 'shift', buyMaxIds: '', tickRate: 10, fx: true, lineShape: 'curve', lineFx: 'none', perf: 'quality', drawEvery: 1, lite: false, cull: false, perfHud: false, snap: true, hint: true, autosave: true,
+  showToolbar: true, showRail: true, showPanel: true, showSearch: true, showLegend: true, showZoom: true, density: 'comfortable', nodeDetail: 'full',
+  bot: 'off', botRebirth: 'once', runCap: 30, advCustom: '1h', advMode: 'by' };
 const settings = Object.assign({}, SETTING_DEFAULTS);
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); } catch (e) { /* ignore */ }
 const saveSettings = () => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } };
@@ -608,7 +812,7 @@ function renderSettings() {
   const S = settings;
   const cb = (k, label, hint) => `<label class="flex items-start gap-2 text-sm text-slate-200 mb-2 cursor-pointer"><input type="checkbox" class="mt-1" data-set="${k}" ${S[k] ? 'checked' : ''}><span>${label}${hint ? `<span class="hint block">${hint}</span>` : ''}</span></label>`;
   const sel = (k, label, opts, num) => `<label class="lbl">${label}</label><select class="inp mb-2" data-set="${k}" ${num ? 'data-num="1"' : ''}>${opts.map(([v, t]) => `<option value="${v}" ${String(S[k]) === String(v) ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
-  $('tab-settings').innerHTML = `<div class="lbl" style="margin-top:0">Performance</div>`
+  $('tab-settings').innerHTML = uiSettingsHtml() + `<div class="lbl" style="display:none"></div>`
     + sel('perf', 'Preset', [['quality', 'Quality (everything on)'], ['balanced', 'Balanced (recommended for laptops)'], ['fast', 'Fastest (slow or old devices)'], ['custom', 'Custom']])
     + sel('drawEvery', 'Redraw the tree every…', [[1, 'Every update (smoothest)'], [2, '2nd update'], [4, '4th update'], [8, '8th update (lightest)']], true)
     + cb('lite', 'Lighter visuals', 'Removes animated transitions, blur/filter effects and soft glows. Looks almost the same but is much cheaper to draw.')
@@ -631,7 +835,7 @@ function renderSettings() {
     + `<button class="btn small mt-2" data-act="resetSettings">Reset settings</button>`;
 }
 function applySettings() {
-  applyPerf();
+  applyPerf(); applyUi();
   state.snap = settings.snap; $('chkSnap').checked = settings.snap;
   if (settings.playMode && sim.active) sim.speed = 1;
   if (sim.timer) { clearInterval(sim.timer); sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10)); }
@@ -1131,7 +1335,7 @@ function boardNodeInner(n) {
   const badge = sim.active ? (bv.unlocked ? `Lv ${bv.level}${bv.max === Infinity ? '' : '/' + bv.max}` : 'LOCKED') : (n.parents.length ? '' : 'ROOT');
   const pct = bv.need > 0 && Number.isFinite(bv.need) ? clamp(bv.progress / bv.need * 100, 0, 100) : 0;
   const fx = ln[0] || n.effects.filter(e => e.modifier || e.target).map(e => `${e.modifier || ''} ${e.target || ''}`.trim()).join(' · ');
-  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
+  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${heatChip(n)}${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
     <div class="n-id">${esc(n.id)} · Board${n.tag ? ` · <span style="color:var(--c)">#${esc(n.tag)}</span>` : ''}</div><div class="n-desc">${esc(n.description)}</div>
     ${bv.hasBar ? `<div class="bd-bar"><div class="bd-fill" style="width:${pct}%"></div><span class="bd-txt">${bv.level >= bv.max ? 'MAX' : fmt(bv.progress) + '/' + fmt(bv.need)}</span></div>` : '<div class="n-costs"><span class="chip dim">No bar (set a currency)</span></div>'}
     <div class="n-fx">${esc(fx)}</div>`;
@@ -1211,7 +1415,7 @@ function playVfx(name, nodeId, ctx = {}, force) {
   const S = e.shake;
   if (S.on) { const pw = num(S.power, 8), fr = []; for (let i = 0; i < 12; i++) { const f = 1 - i / 12; fr.push({ transform: `translate(${(Math.random() - 0.5) * 2 * pw * f}px, ${(Math.random() - 0.5) * 2 * pw * f}px)` }); } fr.push({ transform: 'translate(0,0)' }); viewport.animate(fr, { duration: num(S.ms, 400) }); }
 }
-const fxNode = (n, ctx) => { if (n && n.vfx) playVfx(n.vfx, n.id, ctx || {}); };
+const fxNode = (n, ctx) => { if (!sim.quiet && n && n.vfx) playVfx(n.vfx, n.id, ctx || {}); };
 let vfxSel = 0;
 const VFX_FIELDS = {
   particles: ['Particle burst', [['shape', 'text', 'Emoji / text'], ['color', 'color'], ['count', 'num', 'Count'], ['size', 'num', 'Size px'], ['speed', 'num', 'Speed'], ['spread', 'num', 'Spread ° (360 = all)'], ['gravity', 'num', 'Gravity'], ['life', 'num', 'Life ms']]],
@@ -1519,7 +1723,7 @@ function nodeInner(n, s) {
   } else if (!n.parents.length) badge = 'ROOT';
   if (n.type === 'rebirth') { const g = rebirthGain(n); fx = esc(`+${fmt(g.amount)} ${g.cur ? g.cur.name : '?'}`); }
   if ((n.type === 'achievement' || n.type === 'challenge') && s.level < 1) fx = esc('Goal: ' + n.cond);
-  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
+  return `<div class="n-head"><span class="n-icon">${iconHtml(n, t)}</span><span class="n-title">${esc(n.title)}</span>${heatChip(n)}${badge ? `<span class="n-badge">${badge}</span>` : ''}</div>
           <div class="n-id">${esc(n.id)} · ${t.label}${n.tag ? ` · <span style="color:var(--c)">#${esc(n.tag)}</span>` : ''}</div>
           <div class="n-desc">${esc(n.description)}</div>
           <div class="n-costs">${chips}</div>
@@ -1530,7 +1734,7 @@ function updateNodeEl(n, force) {
   let e = els[n.id];
   if (!e) { e = document.createElement('div'); e.dataset.id = n.id; nodesLayer.appendChild(e); els[n.id] = e; force = true; }
   const s = statusInfo(n);
-  const sig = `${s.status}|${s.level}|${s.bits}|${state.selected === n.id}|${state.connectFrom === n.id}|${multi.has(n.id)}`;
+  const sig = `${s.status}|${s.level}|${s.bits}|${state.selected === n.id}|${state.connectFrom === n.id}|${multi.has(n.id)}|${heatSigOf(n)}`;
   if (!force && e._sig === sig) return;
   e._sig = sig;
   e.style.transform = `translate(${n.x}px, ${n.y}px)`;
@@ -1540,6 +1744,7 @@ function updateNodeEl(n, force) {
   const veiled = sim.active && s.status === 'locked' && settings.locked !== 'show';
   e.title = veiled ? '' : (n.description || n.title);
   e.style.display = veiled && settings.locked === 'hide' ? 'none' : '';
+  if (HEAT.on && HEAT.map && HEAT.map[n.id]) e.dataset.heat = HEAT.map[n.id].cls; else delete e.dataset.heat;
   e.innerHTML = nodeInner(n, s);
 }
 function renderNodes() {
@@ -1573,6 +1778,7 @@ function edgePath(a, b) {
 }
 const edgeFx = pid => settings.lite ? '' : settings.lineFx === 'neon' ? ' neon' : (settings.lineFx === 'flow' && sim.active && isOwnedId(pid) ? ' flow' : '');
 function renderEdges() {
+  if (sim.quiet) return;
   edgeList = []; let html = '';
   for (const n of Object.values(state.nodes)) for (const pid of n.parents) {
     const a = state.nodes[pid]; if (!a) continue;
@@ -1696,7 +1902,7 @@ function updateHint() {
   h.textContent = msg; h.style.display = msg && settings.hint ? 'block' : 'none';
   $('btnConnect').classList.toggle('active', state.tool === 'connect');
   $('btnSim').classList.toggle('sim-on', sim.active);
-  $('btnSim').textContent = sim.active ? (settings.playMode ? '■ Stop' : '■ Stop Test') : (settings.playMode ? '▶ Play' : '▶ Test');
+  { const bt = sim.active ? (settings.playMode ? '■ Stop' : '■ Stop Test') : (settings.playMode ? '▶ Play' : '▶ Test'); $('btnSim').innerHTML = `<span class="ic">${bt.slice(0, 1)}</span><span class="lb">${bt.slice(2)}</span>`; }
   document.body.classList.toggle('playing', playLocked());
   viewport.classList.toggle('tool-connect', state.tool === 'connect');
   viewport.classList.toggle('viewport-sim', sim.active);
@@ -1704,8 +1910,10 @@ function updateHint() {
 function fullRender() {
   ruleIdx = null;
   renderNodes(); renderEdges(); renderInspector(); renderCurrencies(); renderHud(); updateHint(); updateUndoButtons(); updateStatus();
+  if (typeof syncToolbar === 'function') { syncToolbar(); heatRefresh(); }
 }
 function toast(msg, kind = 'info', ms = 3000) {
+  if (sim.quiet) return;
   const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = msg; $('toasts').appendChild(d);
   setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 300); }, ms);
 }
@@ -1714,8 +1922,8 @@ function setTab(name) {
   if (name === 'vars') renderVars();
   if (name === 'vfx') renderVfx();
   if (name === 'log') renderLog();
-  ['inspector', 'currencies', 'log', 'vars', 'vfx', 'settings', 'help'].forEach(t => $('tab-' + t).style.display = t === name ? '' : 'none');
-  curTab = name; closeTabMenu(); syncMoreTab(name);
+  ['inspector', 'currencies', 'log', 'vars', 'vfx', 'settings', 'help', ...Object.keys(TOOL_DEFS)].forEach(t => $('tab-' + t).style.display = t === name ? '' : 'none');
+  curTab = name; closeTabMenu(); syncMoreTab(name); if (TOOL_DEFS[name]) toolLive(name);
 }
 
 /* ---------- 6. EDITING ACTIONS ---------- */
@@ -1958,30 +2166,27 @@ function ensureSimCurrencies() {                                   // add curren
   if (added) { toast(`Added ${added} missing currenc${added > 1 ? 'ies' : 'y'} to the Currency Manager.`); renderCurrencies(); save(); }
 }
 function resetSim() {
+  runArchive();
   sim.levels = {}; sim.balances = {}; sim.boards = {}; sim.time = 0; sim.autoT = {}; sim.challenge = null;
   state.currencies.forEach(c => { sim.balances[c.name] = c.start; });
   sim.rates = computeRates();
+  runBegin();
 }
 function startSim() {
   rtReset(); ensureSimCurrencies(); resetSim();
   sim.active = true; sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.infinite = false; sim.speed = settings.playMode ? 1 : settings.speed;
   sim.timer = setInterval(simTick, 1000 / (settings.tickRate || 10));
+  recObserve(true);
   if (state.tool === 'connect') setTool('select');
   fullRender();
 }
-function stopSim() { clearInterval(sim.timer); sim.timer = null; sim.active = false; fullRender(); }
+function stopSim() { runArchive(); clearInterval(sim.timer); sim.timer = null; sim.active = false; fullRender(); }
 function simTick() {
   ruleIdx = null; const _p0 = performance.now();
+  if (ADV.busy) { sim.last = _p0; return; }                         // a time skip is running; it drives the economy
   const now = performance.now(), dt = Math.min((now - sim.last) / 1000, 1) * sim.speed; sim.last = now;
-  if (sim.running) {
-    sim.time += dt;
-    if (sim.infinite && settings.cheats && !settings.playMode) state.currencies.forEach(c => { if ((sim.balances[c.name] || 0) < 1e15) sim.balances[c.name] = 1e15; });
-    try { tickBoards(dt); } catch (e) { simError('board', e); }       // one failing stage must not freeze everything else
-    try { tickAuto(dt); } catch (e) { simError('automation', e); }
-    try { tickGoals(); } catch (e) { simError('goals', e); }
-    try { sim.rates = computeRates(); } catch (e) { simError('rates', e); }
-    state.currencies.forEach(c => { sim.balances[c.name] = (sim.balances[c.name] ?? c.start) + sim.rates[c.name] * dt; });
-  }
+  if (sim.running) { stepEconomy(dt); react(); }
+  recObserve();
   if (((sim.dn = (sim.dn || 0) + 1) % (settings.drawEvery || 1)) === 0 || !sim.running) {       // the economy runs every tick; drawing can run less often
     updateHud(); refreshSimNodes();
     const vis = Object.values(state.nodes).map(n => (isOwnedId(n.id) ? 1 : 0) + (nodeHidden(n) ? 2 : 0)).join('');
@@ -1989,8 +2194,9 @@ function simTick() {
   }
   perfTick(performance.now() - _p0);
   if ((sim.bt = (sim.bt || 0) + 1) % 5 === 0) updateDevBreak();            // keep link colours / hidden links in step with auto-buys & unlocks
+  if (HEAT.on && (sim.dn % 10) === 0) heatRefresh();
 }
-function refreshSimNodes() { Object.values(state.nodes).forEach(n => updateNodeEl(n, false)); }
+function refreshSimNodes() { if (sim.quiet) return; Object.values(state.nodes).forEach(n => updateNodeEl(n, false)); }
 
 function buyNode(id) {
   const n = state.nodes[id]; if (!n) return;
@@ -2041,7 +2247,7 @@ function renderHudMain() {
   updateHud();
 }
 function updateHud() {
-  if (!sim.active) return;
+  if (!sim.active || sim.quiet) return;
   state.currencies.forEach((c, i) => {
     const b = $('hb-' + i), r = $('hr-' + i); if (!b) return;
     b.textContent = fmt(balanceOf(c.name));
@@ -2797,7 +3003,7 @@ function applyRun(run) {
   sim.levels = levels; sim.balances = balances; sim.boards = boards; sim.autoT = {};
   sim.time = Math.max(0, numOr(run.time, 0));
   sim.challenge = run.challenge && state.nodes[run.challenge] && state.nodes[run.challenge].type === 'challenge' ? run.challenge : null;
-  sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.rates = computeRates(); fullRender();
+  sim.running = true; sim.last = performance.now(); sim.vis = ''; sim.rates = computeRates(); RUNS.cur = null; runBegin(true); fullRender();
   toast(skipped.length ? `Run loaded — skipped ${plural(skipped.length, 'entry')} that no longer exist (${skipped.slice(0, 4).join(', ')}${skipped.length > 4 ? '…' : ''}).` : `Run loaded — back at ${clock(sim.time)}.`, skipped.length ? 'info' : 'ok', skipped.length ? 7000 : 3000);
 }
 function downloadText(name, text) {
@@ -2890,10 +3096,1004 @@ function applyPreset(name) {
   const p = PERF_PRESETS[name]; if (!p) return;
   Object.assign(settings, p, { perf: name });
 }
+/* =========================================================================
+   11. VIEW (presets · density · node detail) · TIME CONTROLS · ANALYSIS TOOLS
+       11a. helpers          11b. view presets + View menu
+       11c. run recorder     11d. time controls + auto-play
+       11e. tool windows     11f. Timeline · Time to afford · Bottlenecks · Milestones
+   ========================================================================= */
+
+/* ---------- 11a. helpers ---------- */
+const p2 = x => String(x).padStart(2, '0');
+/* Run time as shown in reports: 0:12 · 2:40 · 2:14:00 · 1d 2:14:00 */
+function fmtClock(t) {
+  if (t === undefined || t === null || !Number.isFinite(t)) return '—';
+  t = Math.max(0, Math.round(t));
+  const d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  return d ? `${d}d ${h}:${p2(m)}:${p2(s)}` : h ? `${h}:${p2(m)}:${p2(s)}` : `${m}:${p2(s)}`;
+}
+/* Time remaining: 02:34 · 1:02:34 · 2d 03:00:00 */
+function fmtEta(t) {
+  if (t === Infinity || t === undefined || Number.isNaN(t)) return 'never';
+  if (t <= 0) return 'now';
+  if (t < 1) return '<1s';
+  t = Math.ceil(t);
+  const d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  return d ? `${d}d ${p2(h)}:${p2(m)}:${p2(s)}` : h ? `${h}:${p2(m)}:${p2(s)}` : `${p2(m)}:${p2(s)}`;
+}
+/* "90", "5m", "1h30m", "2d", "1.5h", "01:30:00", "5:00" -> seconds (NaN if unreadable) */
+function parseDuration(str) {
+  const s = String(str || '').trim().toLowerCase(); if (!s) return NaN;
+  if (/^\d+(:\d+){1,3}$/.test(s)) {
+    const p = s.split(':').map(Number);
+    return p.length === 2 ? p[0] * 60 + p[1] : p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 86400 + p[1] * 3600 + p[2] * 60 + p[3];
+  }
+  if (/^\d*\.?\d+$/.test(s)) return parseFloat(s);
+  const re = /(\d*\.?\d+)\s*(d|h|m|s)/g; let m, tot = 0, any = false;
+  while ((m = re.exec(s))) { tot += parseFloat(m[1]) * ({ d: 86400, h: 3600, m: 60, s: 1 })[m[2]]; any = true; }
+  return any && !s.replace(re, '').replace(/[\s,]/g, '') ? tot : NaN;
+}
+const RUN_COLORS = ['#38bdf8', '#fbbf24', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#2dd4bf', '#f87171', '#a3e635', '#e879f9'];
+const TOOLS_KEY = 'arbor.tools.v1';
+const pidNow = () => (typeof projects !== 'undefined' && projects && projects.current) || 'default';
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+
+/* ---------- 11b. VIEW: presets, density, node detail ---------- */
+const UI_KEYS = ['showToolbar', 'showRail', 'showPanel', 'showSearch', 'showLegend', 'showZoom', 'hint', 'density', 'nodeDetail'];
+const UI_PRESETS = {
+  full:   { label: 'Full',   note: 'Everything on: tools toolbar, tool rail, side panel and legend.',
+            showToolbar: true,  showRail: true,  showPanel: true,  showSearch: true,  showLegend: true,  showZoom: true, hint: true,  density: 'comfortable', nodeDetail: 'full' },
+  simple: { label: 'Simple', note: 'Smaller and quieter: no toolbar, search or legend, compact density and node cards.',
+            showToolbar: false, showRail: true,  showPanel: true,  showSearch: false, showLegend: false, showZoom: true, hint: true,  density: 'compact',     nodeDetail: 'compact' },
+  focus:  { label: 'Focus',  note: 'Canvas only. Everything else is hidden; use View to bring it back.',
+            showToolbar: false, showRail: false, showPanel: false, showSearch: false, showLegend: false, showZoom: true, hint: false, density: 'minimal',     nodeDetail: 'compact' },
+  legacy: { label: 'Legacy', note: 'The layout from before the toolbar existed. The tools are still under View.',
+            showToolbar: false, showRail: true,  showPanel: true,  showSearch: true,  showLegend: true,  showZoom: true, hint: true,  density: 'comfortable', nodeDetail: 'full' },
+};
+const NODE_SIZES = { full: [200, 128], compact: [184, 92], minimal: [156, 44] };
+function currentPreset() { for (const [k, p] of Object.entries(UI_PRESETS)) if (UI_KEYS.every(x => settings[x] === p[x])) return k; return 'custom'; }
+function applyNodeSize() {
+  const [w, h] = NODE_SIZES[settings.nodeDetail] || NODE_SIZES.full;
+  document.documentElement.style.setProperty('--nw', w + 'px'); document.documentElement.style.setProperty('--nh', h + 'px');
+  if (w === NW && h === NH) return false;
+  NW = w; NH = h; return true;
+}
+function applyUi() {
+  const S = settings, b = document.body;
+  b.dataset.density = S.density; b.dataset.nodes = S.nodeDetail;
+  $('toolbar').style.display = S.showToolbar ? '' : 'none';
+  $('rail').style.display = S.showRail ? '' : 'none';
+  $('sidebar').style.display = S.showPanel ? '' : 'none';
+  $('searchBox').style.display = S.showSearch ? '' : 'none';
+  $('legendBox').style.display = S.showLegend ? '' : 'none';
+  $('zoomBox').style.display = S.showZoom ? '' : 'none';
+  const resized = applyNodeSize();
+  if (resized) renderEdges();
+  updateHint(); syncViewMenu();
+  setTimeout(applyView, 0);
+}
+function setUiKey(k, v) {
+  if (k === 'uiPreset') { const p = UI_PRESETS[v]; if (!p) return; UI_KEYS.forEach(x => { settings[x] = p[x]; }); }
+  else settings[k] = v;
+  saveSettings(); applyUi(); renderSettings();
+}
+function uiControlsHtml() {
+  const S = settings, cur = currentPreset();
+  const seg = (key, opts, val) => `<div class="seg">${opts.map(([v, t]) => `<button data-vk="${key}" data-v="${v}" class="${String(val) === v ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const chk = (key, label) => `<label class="vk-check"><input type="checkbox" data-vk="${key}" ${S[key] ? 'checked' : ''}> ${label}</label>`;
+  return `<div class="lbl" style="margin-top:0">Layout preset</div>
+    ${seg('uiPreset', Object.entries(UI_PRESETS).map(([k, p]) => [k, p.label]), cur)}
+    <div class="hint vk-note">${cur === 'custom' ? 'Custom layout: you changed individual options below.' : UI_PRESETS[cur].note}</div>
+    <div class="lbl">Density</div>
+    ${seg('density', [['comfortable', 'Comfortable'], ['compact', 'Compact'], ['minimal', 'Minimal']], S.density)}
+    <div class="lbl">Node cards</div>
+    ${seg('nodeDetail', [['full', 'Full'], ['compact', 'Compact'], ['minimal', 'Title only']], S.nodeDetail)}
+    <div class="lbl">Show</div>
+    <div class="vk-grid">${chk('showToolbar', 'Tools toolbar')}${chk('showRail', 'Tool rail')}${chk('showPanel', 'Side panel')}${chk('showSearch', 'Search box')}${chk('showLegend', 'Legend')}${chk('showZoom', 'Zoom controls')}${chk('hint', 'Hint bar')}</div>`;
+}
+function uiSettingsHtml() {
+  const S = settings;
+  const sel = (k, label, opts, hint) => `<label class="lbl">${label}</label><select class="inp mb-2" data-set="${k}">${opts.map(([v, t]) => `<option value="${v}" ${String(S[k]) === String(v) ? 'selected' : ''}>${t}</option>`).join('')}</select>${hint ? `<div class="hint mb-2">${hint}</div>` : ''}`;
+  return `<div class="lbl" style="margin-top:0">Interface</div>${uiControlsHtml()}
+    <div class="lbl">Auto-play (Test mode)</div>
+    ${sel('bot', 'Player', [['off', 'Manual (idle: only automation buys)'], ['cheapest', 'Auto-buy, cheapest first']], 'Used by Run to end, the timeline, the bottleneck colours and the milestone report. The auto-player never enters challenges.')}
+    ${sel('botRebirth', 'Rebirth', [['once', 'Once, as soon as it is possible'], ['always', 'Every time it is possible'], ['never', 'Never']])}
+    ${sel('runCap', 'Stop a run after', [[1, '1 day'], [7, '7 days'], [30, '30 days'], [365, '1 year']], 'Safety limit for Run to end (simulated time, not real time).')}
+    <div class="lbl" style="margin-top:18px">Performance &amp; simulation</div>`;
+}
+function renderViewMenu() { $('viewMenuBody').innerHTML = uiControlsHtml(); }
+function syncViewMenu() { if ($('viewMenu').classList.contains('open')) renderViewMenu(); }
+$('btnView').onclick = e => {
+  e.stopPropagation(); const m = $('viewMenu'), open = !m.classList.contains('open');
+  if (open) { renderViewMenu(); renderViewTools(); const r = $('btnView').getBoundingClientRect(); m.style.top = (r.bottom + 6) + 'px'; m.style.right = Math.max(8, window.innerWidth - r.right) + 'px'; }
+  m.classList.toggle('open', open);
+};
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#viewMenu, #btnView')) $('viewMenu').classList.remove('open'); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && $('viewMenu').classList.contains('open')) { $('viewMenu').classList.remove('open'); e.stopPropagation(); } }, true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-vk]'); if (b) setUiKey(b.dataset.vk, b.dataset.v);
+});
+document.addEventListener('change', e => { const c = e.target.closest('input[data-vk]'); if (c) setUiKey(c.dataset.vk, c.checked); });
+$('btnPanel').onclick = () => setUiKey('showPanel', !settings.showPanel);
+
+/* ---------- 11c. RUN RECORDER ----------
+   Watches the simulation and keeps, per run: sampled balances / production, every unlock · affordable · purchase · reset event,
+   and the first time each node was unlocked, became affordable and was bought. Finished runs are kept so they can be compared. */
+const MAX_RUNS = 10, MAX_SAMPLES = 3200;
+const RUNS = { list: [], cur: null, pid: null, seq: 0 };
+const runsKey = () => 'arbor.runs.v1.' + pidNow();
+function runsEnsure() {
+  const pid = pidNow(); if (RUNS.pid === pid) return;
+  if (RUNS.cur) { const keep = RUNS.cur; RUNS.cur = null; if (RUNS.pid) { keep.end = sim.time; } }
+  RUNS.pid = pid; const saved = lsGet(runsKey(), { list: [], seq: 0 });
+  RUNS.list = Array.isArray(saved.list) ? saved.list : []; RUNS.seq = saved.seq || RUNS.list.length;
+}
+function runsPersist() {
+  const slim = r => {
+    const stride = Math.max(1, Math.ceil(r.samples.length / 300)), s = r.samples.filter((_, i) => i % stride === 0 || i === r.samples.length - 1);
+    return Object.assign({}, r, { cur: undefined, samples: s, events: r.events.slice(0, 2500) });
+  };
+  let list = RUNS.list.map(slim);
+  while (list.length && !lsSet(runsKey(), { list, seq: RUNS.seq })) list = list.slice(1);   // out of space: forget the oldest
+}
+function newRun() {
+  return { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: '', color: '', visible: true, startedAt: Date.now(),
+    names: state.currencies.map(c => c.name), samples: [], events: [], first: {}, cur: {}, curFirst: {}, custom: {}, unknown: {},
+    dtS: 0.5, end: 0, bot: settings.bot, rebirth: settings.botRebirth, done: '', lastReach: 0 };
+}
+function runBegin(rebased) {
+  runsEnsure(); RUNS.cur = newRun(); RUNS.cur.rebased = !!rebased; recObserve(true);
+}
+function runArchive() {
+  const R = RUNS.cur; RUNS.cur = null; if (!R) return;
+  runsEnsure(); R.end = sim.time;
+  if (R.end < 2 || !R.events.some(e => e.k === 'buy' || e.k === 'reset')) return;   // nothing worth keeping
+  R.name = 'Run ' + (++RUNS.seq); R.color = RUN_COLORS[(RUNS.seq - 1) % RUN_COLORS.length]; R.cur = {};
+  RUNS.list.push(R); while (RUNS.list.length > MAX_RUNS) RUNS.list.shift();
+  runsPersist();
+  if (HEAT.src === 'cur') HEAT.src = R.id;
+  toolsRefresh(true);
+}
+const runById = id => id === 'cur' ? RUNS.cur : RUNS.list.find(r => r.id === id) || null;
+const runLabel = r => r === RUNS.cur ? 'Current run' : r.name;
+
+/* A light status for a node: cheaper than statusInfo(), and never touches the DOM. */
+function liteStatus(n) {
+  const id = n.id, t = n.type;
+  if (t === 'board') { const u = boardUnlocked(n); return { avail: u, level: u ? 1 : 0, owned: u, afford: false, goal: true }; }
+  if (t === 'achievement' || t === 'challenge') { const lv = sim.levels[id] || 0, u = boardUnlocked(n) && !isBlocked(n); return { avail: u && lv < 1, level: lv, owned: lv > 0, afford: false, goal: true }; }
+  if (t === 'rebirth') {
+    const un = boardUnlocked(n), lv = sim.levels[id] || 0; let afford = false;
+    if (un) { const cs = costsAt(n, 0); if (cs.every(c => balanceOf(c.currency) >= c.amount)) afford = rebirthGain(n).amount > 0; }
+    return { avail: un, level: lv, owned: lv > 0, afford, rebirth: true };
+  }
+  const max = maxLevelOf(n), lv = sim.levels[id] || 0;
+  const unl = !n.parents.length || (n.requires === 'any' ? n.parents.some(isOwnedId) : n.parents.every(isOwnedId));
+  const avail = lv < max && (unl || lv > 0) && !isBlocked(n);
+  let afford = false;
+  if (avail) afford = costsAt(n, lv).every(c => balanceOf(c.currency) >= c.amount);
+  return { avail, level: lv, owned: lv > 0, afford };
+}
+/* Time until a set of costs is affordable at the current production, plus the per-currency detail. */
+function etaFor(costs) {
+  const need = new Map();
+  for (const c of costs) { const cur = findCurrency(c.currency), key = cur ? cur.name : '\0' + c.currency; need.set(key, (need.get(key) || 0) + c.amount); }
+  const lines = []; let eta = 0, worst = null;
+  for (const [key, amt] of need) {
+    const cur = key[0] === '\0' ? null : findCurrency(key), bal = cur ? balanceOf(cur.name) : 0, rate = cur ? (sim.rates[cur.name] || 0) : 0;
+    const short = amt - bal, t = short <= 0 ? 0 : rate > 0 ? short / rate : Infinity;
+    const line = { name: cur ? cur.name : key.slice(1), need: amt, bal, rate, t }; lines.push(line);
+    if (t >= eta) { eta = t; worst = line; }
+  }
+  return { eta, lines, worst: worst || lines[0] || null };
+}
+const waitsFor = n => n.type !== 'board' && n.type !== 'achievement' && n.type !== 'challenge';
+function recEvent(R, k, n, t, lv, cnt) {
+  const lim = k === 'buy' || k === 'reset' ? 6000 : 3000; if (R.events.length >= lim && k !== 'reset') return;
+  R.events.push({ t, k, id: n.id, lv, n: cnt || 1 });
+}
+function recSample(R, owned) {
+  const t = sim.time, last = R.samples[R.samples.length - 1];
+  const b = R.names.map(nm => { const c = findCurrency(nm); return c ? balanceOf(c.name) : 0; });
+  const r = R.names.map(nm => { const c = findCurrency(nm); return c ? (sim.rates[c.name] || 0) : 0; });
+  const s = { t, b, r, o: owned === undefined ? (last ? last.o : 0) : owned };
+  if (last && last.t === t) { R.samples[R.samples.length - 1] = s; return; }   // same instant: keep only the latest values
+  R.samples.push(s);
+  if (R.samples.length > MAX_SAMPLES) { R.samples = R.samples.filter((_, i) => i % 2 === 0 || i === R.samples.length - 1); R.dtS *= 2; }
+}
+let recLastTool = 0;
+function recObserve(force) {
+  const R = RUNS.cur; if (!R || !sim.active) return;
+  const t = sim.time; let owned = 0, evs = 0; const rebase = R.rebased && !R.rebasedDone;
+  for (const n of Object.values(state.nodes)) {
+    const s = liteStatus(n), f = R.first[n.id] || (R.first[n.id] = {}), r = R.cur[n.id] || (R.cur[n.id] = { u: 0, a: 0, lv: 0 });
+    if (s.owned) owned++;
+    if (rebase && s.owned) { R.unknown[n.id] = 1; r.u = 1; r.a = 1; r.lv = s.level; continue; }   // loaded from a save: earlier history is unknown
+    if (s.level < r.lv) { r.u = 0; r.a = 0; }                                              // reset (rebirth etc.): the node starts a new life
+    if (s.avail && !r.u) { r.u = 1; if (f.a === undefined) f.a = t; recEvent(R, 'unlock', n, t, s.level); evs++; if (s.goal && n.type === 'board' && f.b === undefined) { f.b = t; R.lastReach = t; } }
+    if (s.afford && !r.a) { r.a = 1; if (f.f === undefined) f.f = t; recEvent(R, 'afford', n, t, s.level); evs++; }
+    if (s.level > r.lv && n.type !== 'board') {
+      if (f.b === undefined) { f.b = t; R.lastReach = t; }
+      recEvent(R, s.rebirth ? 'reset' : 'buy', n, t, s.level, s.level - r.lv); evs++;
+    }
+    r.lv = s.level;
+  }
+  if (rebase) R.rebasedDone = true;
+  state.currencies.forEach((c, i) => {                                                      // "second currency": first time a currency is earned
+    if (i === 0 || R.curFirst[c.name] !== undefined) return;
+    if ((sim.rates[c.name] || 0) > 0 || balanceOf(c.name) > c.start + 1e-9) { R.curFirst[c.name] = t; evs++; }
+  });
+  if (MS.cfg().custom.length) {
+    const pending = MS.cfg().custom.filter(m => R.custom[m.id] === undefined && m.f.trim());
+    if (pending.length) { const v = baseVars(); for (const m of pending) { const x = evalFormula(m.f, v); if (x > 0) { R.custom[m.id] = t; evs++; } } }
+  }
+  if (force || evs || t - (R.samples.length ? R.samples[R.samples.length - 1].t : -1) >= Math.max(R.dtS, t / 1200)) recSample(R, owned);
+  if (evs && !sim.quiet) { toolsDirty = true; }
+}
+
+/* ---------- 11d. TIME CONTROLS + AUTO-PLAYER ---------- */
+const ADV = { busy: false, cancel: false, target: 0, from: 0, label: '', reason: '', prevRun: true };
+const tickDt = () => 1 / (settings.tickRate || 10);
+/* The economy for `dt` seconds (the body of the old simTick, unchanged in behaviour). */
+function stepEconomy(dt) {
+  sim.time += dt;
+  if (sim.infinite && settings.cheats && !settings.playMode) state.currencies.forEach(c => { if ((sim.balances[c.name] || 0) < 1e15) sim.balances[c.name] = 1e15; });
+  try { tickBoards(dt); } catch (e) { simError('board', e); }       // one failing stage must not freeze everything else
+  try { tickAuto(dt); } catch (e) { simError('automation', e); }
+  try { tickGoals(); } catch (e) { simError('goals', e); }
+  try { sim.rates = computeRates(); } catch (e) { simError('rates', e); }
+  state.currencies.forEach(c => { sim.balances[c.name] = (sim.balances[c.name] ?? c.start) + sim.rates[c.name] * dt; });
+}
+/* After the balances moved: automation, goals and the auto-player get to react at this exact moment. */
+function react() {
+  try { tickAuto(0); } catch (e) { simError('automation', e); }
+  try { tickGoals(); } catch (e) { simError('goals', e); }
+  try { botAct(); } catch (e) { simError('auto-player', e); }
+  try { sim.rates = computeRates(); } catch (e) { simError('rates', e); }
+}
+function botBuy(n, level) {
+  costsAt(n, level).forEach(c => { sim.balances[findCurrency(c.currency).name] -= c.amount; });
+  sim.levels[n.id] = level + 1; fxNode(n); sim.rates = computeRates();
+}
+/* "Cheapest first": buy whatever is affordable, cheapest in terms of how long its cost takes to earn. */
+function botAct() {
+  if (settings.bot !== 'cheapest' || playLocked()) return;
+  for (let round = 0; round < 60; round++) {
+    const cand = [];
+    for (const n of Object.values(state.nodes)) {
+      if (n.type === 'board' || n.type === 'achievement' || n.type === 'challenge' || n.type === 'rebirth') continue;
+      const s = liteStatus(n); if (!s.avail || !s.afford) continue;
+      let score = 0; for (const c of costsAt(n, s.level)) { const cur = findCurrency(c.currency), r = cur ? (sim.rates[cur.name] || 0) : 0; score += r > 0 ? c.amount / r : c.amount * 1e9; }
+      cand.push({ n, score });
+    }
+    cand.sort((a, b) => a.score - b.score || natCmp(a.n.id, b.n.id));
+    let bought = 0;
+    for (const { n } of cand) {
+      if (bought >= 400) break;
+      const s = liteStatus(n); if (!s.avail || !s.afford) continue;
+      botBuy(n, s.level); bought++;
+    }
+    if (!bought) break;
+  }
+  if (settings.botRebirth === 'never') return;
+  for (let g = 0; g < 20; g++) {
+    const rb = Object.values(state.nodes).find(n => n.type === 'rebirth' && (settings.botRebirth === 'always' || !(sim.levels[n.id] > 0)) && statusInfo(n).affordable);
+    if (!rb) break; doRebirth(rb);
+  }
+}
+/* How long until the soonest waiting upgrade becomes affordable (so a long skip lands on the exact moment). */
+function nextEventDt() {
+  let best = Infinity;
+  for (const n of Object.values(state.nodes)) {
+    if (!waitsFor(n)) continue;
+    const s = liteStatus(n); if (!s.avail || s.afford) continue;
+    const e = etaFor(costsAt(n, n.type === 'rebirth' ? 0 : s.level)).eta; if (e > 0 && e < best) best = e;
+  }
+  return best;
+}
+function minAutoDelay() {
+  let d = Infinity;
+  for (const a of Object.values(state.nodes)) {
+    const t = effType(a); if ((t !== 'auto' && t !== 'autoperm') || !(sim.levels[a.id] > 0)) continue;
+    const x = Math.max(0, numOr(a.auto.delay, 0)); if (x > 0 && x < d) d = x;
+  }
+  return d;
+}
+function ratesAfter(h) {                                          // production if we simply let `h` seconds pass (to spot formulas that change fast)
+  const keep = sim.balances, mults = sim.mults, b2 = {};
+  state.currencies.forEach(c => { b2[c.name] = (keep[c.name] ?? c.start) + (sim.rates[c.name] || 0) * h; });
+  sim.balances = b2;
+  try { return computeRates(); } finally { sim.balances = keep; sim.mults = mults; }
+}
+function advanceStep(remaining) {
+  const tk = tickDt();
+  let h = Math.min(remaining, Math.max(tk, Math.min(30, sim.time * 0.01)), Math.max(tk, minAutoDelay()));
+  const ev = nextEventDt(); let evStep = false;
+  if (ev < h) { h = Math.max(ev * (1 + 1e-9) + 1e-9, 1e-4); evStep = true; }
+  if (h > tk * 4) {                                               // production that changes quickly (formulas) needs shorter steps
+    for (let i = 0; i < 6; i++) {
+      const r1 = ratesAfter(h); let bad = false;
+      for (const c of state.currencies) { const r0 = sim.rates[c.name] || 0, d = Math.abs((r1[c.name] || 0) - r0); if (d > 0.02 * Math.max(Math.abs(r0), 1e-9) && d > 1e-9) { bad = true; break; } }
+      if (!bad) break; h = Math.max(tk, h / 2); evStep = false;
+    }
+  }
+  h = Math.min(h, remaining);
+  stepEconomy(h);
+  const R = RUNS.cur; if (R && evStep) recSample(R);
+  react(); recObserve();
+  return h;
+}
+function finished() {                                              // every node the auto-player can reach has been reached
+  const R = RUNS.cur; if (!R) return '';
+  const all = Object.values(state.nodes).filter(n => n.type !== 'challenge');
+  if (all.every(n => R.first[n.id] && R.first[n.id].b !== undefined)) return 'Every upgrade was reached';
+  const stall = Math.max(3600, R.lastReach);
+  if (sim.time - R.lastReach > stall && nextEventDt() === Infinity) return 'Stopped: nothing more can be reached with the current production';
+  if (sim.time - R.lastReach > stall * 4) return 'Stopped: no new upgrade was reached for a long time';
+  return '';
+}
+function setBusy(on, label) {
+  ADV.busy = on; $('tbBusy').style.display = on ? '' : 'none'; $('tbTimeGroup').style.display = on ? 'none' : ''; $('toolbar').scrollLeft = 0;
+  if (on) { $('tbBusyTxt').textContent = label || 'Simulating…'; $('tbProg').style.width = '0%'; }
+}
+function ensureRun() { if (!sim.active) { startSim(); sim.running = false; renderHud(); } }
+/* Advance the simulation by `seconds` of simulated time without waiting for it. opts.untilDone: stop early when the tree is complete. */
+function advanceBy(seconds, opts = {}) {
+  return new Promise(resolve => {
+    if (playLocked()) { toast('Time controls are off in Play mode.', 'info'); return resolve(0); }
+    if (ADV.busy) { toast('Already simulating — cancel it first.', 'info'); return resolve(0); }
+    ensureRun();
+    seconds = Math.max(0, seconds); if (!(seconds > 0)) return resolve(0);
+    const from = sim.time, target = from + seconds, quick = seconds <= 5;
+    ADV.cancel = false; ADV.reason = ''; ADV.steps = 0; ADV.from = from; ADV.target = target; ruleIdx = null;
+    if (!quick) setBusy(true, opts.label || `Simulating ${fmtClock(seconds)}…`);
+    sim.quiet = true; let lastUi = performance.now();
+    const done = () => {
+      sim.quiet = false; setBusy(false); sim.last = performance.now(); ruleIdx = null;
+      if (!sim.active) return resolve(0);
+      sim.rates = computeRates(); refreshSimNodes(); renderEdges(); renderHud(); heatRefresh(); toolsRefresh(true); syncToolbar();
+      resolve(sim.time - from);
+    };
+    let seen = -1;
+    const slice = () => {
+      if (!sim.active) { ADV.cancel = true; }
+      const t0 = performance.now(); let n = 0;
+      try {
+        while (!ADV.cancel && sim.time < target - 1e-9 && performance.now() - t0 < 14) {
+          advanceStep(target - sim.time);
+          if (++ADV.steps > 1500000) { ADV.reason = 'Stopped: too many events to simulate'; ADV.cancel = true; }
+          if (opts.untilDone && (++n % 25 === 0 || (RUNS.cur && RUNS.cur.lastReach !== seen) || sim.time >= target - 1e-9)) { seen = RUNS.cur ? RUNS.cur.lastReach : -1; const why = finished(); if (why) { ADV.reason = why; ADV.cancel = true; } }
+        }
+      } catch (e) { simError('time skip', e); ADV.cancel = true; }
+      if (ADV.cancel || sim.time >= target - 1e-9) return done();
+      if (!quick && performance.now() - lastUi > 120) {
+        lastUi = performance.now(); $('tbProg').style.width = Math.min(100, (sim.time - from) / seconds * 100) + '%';
+        $('tbBusyTxt').textContent = `${opts.label || 'Simulating'} · ${fmtClock(sim.time)}`;
+        updateHud(); toolsRefresh(false);
+      }
+      setTimeout(slice, 0);
+    };
+    slice();
+  });
+}
+async function runToEnd() {
+  if (playLocked()) return;
+  const was = settings.bot;
+  if (was === 'off') { settings.bot = 'cheapest'; saveSettings(); renderSettings(); toast('Auto-play switched on so the run can reach upgrades by itself.', 'info', 3500); }
+  if (sim.active) resetSim(); else startSim();        // a fresh run; the previous one stays in the run list
+  sim.running = false; renderHud();
+  const cap = Math.max(1, Number(settings.runCap) || 30) * 86400;
+  const got = await advanceBy(cap, { untilDone: true, label: 'Running to the end' });
+  const why = ADV.reason || (sim.time >= cap - 1 ? `Stopped at the ${Math.round(cap / 86400)}-day limit` : '');
+  toast(`${why || 'Done'} · ${fmtClock(sim.time)}`, 'ok', 5000);
+  if (!HEAT.on) { /* leave the canvas as it was */ }
+  heatRefresh(); toolsRefresh(true);
+  return got;
+}
+function restartRun() {
+  if (playLocked()) return;
+  if (!sim.active) { ensureRun(); return; }
+  const had = RUNS.cur && RUNS.cur.events.some(e => e.k === 'buy');
+  resetSim(); refreshSimNodes(); renderEdges(); updateHud(); syncToolbar();
+  toast(had ? 'Restarted. The previous run is kept in the Timeline.' : 'Restarted.', 'ok', 2200);
+}
+function toggleRun() {
+  if (playLocked()) return;
+  if (!sim.active) { startSim(); return; }
+  sim.running = !sim.running; sim.last = performance.now(); renderHud(); syncToolbar();
+}
+function stepTick() { if (!playLocked()) { ensureRun(); sim.running = false; renderHud(); advanceBy(tickDt()); } }
+function syncToolbar() {
+  const b = $('tbPlay'); if (!b) return;
+  b.textContent = !sim.active ? '▶ Start' : sim.running ? '⏸ Pause' : '▶ Resume';
+  $('tbClock').textContent = sim.active ? fmtClock(sim.time) : '0:00';
+  $('tbBot').value = settings.bot;
+  const nx = nextUpgrade(), el = $('tbNext');
+  if (!sim.active) { el.textContent = ''; el.dataset.id = ''; }
+  else if (!nx) { el.textContent = 'Next upgrade: —'; el.dataset.id = ''; }
+  else { el.dataset.id = nx.n.id; el.textContent = nx.eta <= 0 ? `Ready to buy: ${nx.n.title}` : nx.eta === Infinity ? `Next upgrade: ${nx.n.title} · no income` : `Next upgrade: ${fmtEta(nx.eta)} remaining`; el.title = `${nx.n.id} ${nx.n.title}${nx.eta > 0 && nx.eta !== Infinity ? ' — click to jump to it' : ''}`; }
+  $('tbTools').querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('active', tl(x.dataset.tool).mode !== 'off'));
+}
+function nextUpgrade() {
+  if (!sim.active) return null;
+  let best = null;
+  for (const n of Object.values(state.nodes)) {
+    if (!waitsFor(n)) continue; const s = liteStatus(n); if (!s.avail) continue;
+    const e = s.afford ? 0 : etaFor(costsAt(n, n.type === 'rebirth' ? 0 : s.level)).eta;
+    if (!best || e < best.eta) best = { n, eta: e };
+  }
+  return best;
+}
+$('tbPlay').onclick = toggleRun;
+$('tbTick').onclick = stepTick;
+$('tbRestart').onclick = restartRun;
+$('tbEnd').onclick = runToEnd;
+$('tbCancel').onclick = () => { ADV.cancel = true; };
+$('tbTimeGroup').addEventListener('click', e => { const b = e.target.closest('[data-adv]'); if (b) advanceBy(Number(b.dataset.adv)); });
+function goCustom() {
+  const secs = parseDuration($('tbCustom').value), mode = $('tbMode').value;
+  if (!Number.isFinite(secs) || secs <= 0) { toast('Enter a duration such as 90, 5m, 1h30m, 2d or 01:30:00.', 'error'); return; }
+  settings.advCustom = $('tbCustom').value; settings.advMode = mode; saveSettings();
+  ensureRun();
+  if (mode === 'to') { if (secs <= sim.time) { toast(`The run is already past ${fmtClock(secs)}.`, 'info'); return; } advanceBy(secs - sim.time); } else advanceBy(secs);
+}
+$('tbGo').onclick = goCustom;
+$('tbCustom').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') goCustom(); });
+$('tbCustom').value = settings.advCustom || '1h'; $('tbMode').value = settings.advMode || 'by';
+$('tbBot').onchange = e => { settings.bot = e.target.value; saveSettings(); renderSettings(); syncToolbar(); };
+$('tbNext').onclick = () => { const id = $('tbNext').dataset.id; if (id) goNode(id); };
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && ADV.busy) { ADV.cancel = true; e.stopPropagation(); } }, true);
+
+/* ---------- 11e. TOOL WINDOWS ----------
+   Every analysis tool can be a draggable window over the canvas, or docked as a tab in the side panel. */
+const TOOL_DEFS = {
+  timeline:   { title: 'Progression timeline', short: 'Timeline',       icon: '📈', w: 720, h: 500 },
+  afford:     { title: 'Time to afford',       short: 'Time to afford', icon: '⏱', w: 420, h: 520 },
+  heatmap:    { title: 'Upgrade bottlenecks',  short: 'Bottlenecks',    icon: '🔥', w: 560, h: 500 },
+  milestones: { title: 'Milestone timing',     short: 'Milestones',     icon: '🏁', w: 440, h: 520 },
+};
+const TL = lsGet(TOOLS_KEY, {});
+const tl = id => TL[id] || (TL[id] = { mode: 'off' });
+const tlSave = () => lsSet(TOOLS_KEY, TL);
+const opt = (name, def) => TL._o && TL._o[name] ? TL._o[name] : ((TL._o = TL._o || {})[name] = def);
+let toolsDirty = false;
+const HEAT = { on: false, src: 'cur', map: null, stats: null };
+
+function toolHost(id) {                                          // the element a tool draws into, or null when it is closed
+  const s = tl(id);
+  if (s.mode === 'float') return winEl(id).querySelector('.tw-body');
+  if (s.mode === 'tab') { const h = $('tab-' + id); return h && h.querySelector('.tw-body'); }
+  return null;
+}
+function toolVisible(id) {
+  const s = tl(id); if (s.mode === 'float') return true;
+  return s.mode === 'tab' && curTab === id && settings.showPanel;
+}
+function winEl(id) {
+  let w = $('tw-' + id); if (w) return w;
+  const d = TOOL_DEFS[id], s = tl(id), idx = Object.keys(TOOL_DEFS).indexOf(id);
+  w = document.createElement('section'); w.id = 'tw-' + id; w.className = 'tool-win'; w.dataset.tool = id; w.setAttribute('data-ui', '');
+  w.innerHTML = `<header class="tw-head"><span class="tw-title">${d.icon} ${d.title}</span><span class="flex-1"></span>
+    <button class="icon-btn" data-ta="dock" title="Dock into the side panel">⇲</button><button class="icon-btn" data-ta="close" title="Close">✕</button></header><div class="tw-body"></div>`;
+  w.style.width = Math.min(s.w || d.w, window.innerWidth - 20) + 'px'; w.style.height = Math.min(s.h || d.h, window.innerHeight - 70) + 'px';
+  w.style.left = (s.x ?? 230 + idx * 44) + 'px'; w.style.top = (s.y ?? 110 + idx * 44) + 'px';
+  $('toolLayer').appendChild(w); clampWin(w);
+  const head = w.querySelector('.tw-head');
+  head.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return; e.preventDefault(); bringFront(w);
+    const r = w.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; head.setPointerCapture(e.pointerId);
+    const mv = ev => { w.style.left = (ev.clientX - dx) + 'px'; w.style.top = (ev.clientY - dy) + 'px'; clampWin(w); };
+    const up = () => { head.removeEventListener('pointermove', mv); head.removeEventListener('pointerup', up); s.x = parseInt(w.style.left); s.y = parseInt(w.style.top); tlSave(); };
+    head.addEventListener('pointermove', mv); head.addEventListener('pointerup', up);
+  });
+  w.addEventListener('pointerdown', () => bringFront(w));
+  let rt = 0;
+  new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (w.style.display === 'none') return; s.w = w.offsetWidth; s.h = w.offsetHeight; tlSave(); toolLive(id); }, 120); }).observe(w);
+  return w;
+}
+let zTop = 45;
+function bringFront(w) { w.style.zIndex = ++zTop > 49 ? (zTop = 45) : zTop; }
+function clampWin(w) {
+  const l = parseInt(w.style.left) || 0, t = parseInt(w.style.top) || 0;
+  w.style.left = Math.max(-w.offsetWidth + 80, Math.min(window.innerWidth - 80, l)) + 'px';
+  w.style.top = Math.max(0, Math.min(window.innerHeight - 40, t)) + 'px';
+}
+function syncToolTabs() {                                        // docked tools get a tab in the "More" menu
+  for (const id of Object.keys(TOOL_DEFS)) {
+    const docked = tl(id).mode === 'tab'; let b = tabMenu.querySelector(`[data-tab="${id}"]`);
+    if (docked && !b) { b = document.createElement('button'); b.className = 'tab'; b.dataset.tab = id; b.textContent = TOOL_DEFS[id].short; b.onclick = () => setTab(id); tabMenu.insertBefore(b, tabMenu.firstChild); }
+    if (!docked && b) b.remove();
+    if (docked) SECOND_TABS[id] = TOOL_DEFS[id].short; else delete SECOND_TABS[id];
+  }
+}
+function toolOpen(id, mode) {
+  const s = tl(id); if (mode) s.mode = mode; else if (s.mode === 'off') s.mode = 'float';
+  tlSave(); mountTool(id);
+}
+function toolClose(id) {
+  const s = tl(id), wasTab = s.mode === 'tab'; s.mode = 'off'; tlSave();
+  const w = $('tw-' + id); if (w) w.style.display = 'none';
+  const h = $('tab-' + id); if (h) h.innerHTML = '';
+  syncToolTabs(); if (wasTab && curTab === id) setTab('inspector');
+  if (id === 'heatmap') heatRefresh(true);
+  syncToolbar(); syncViewTools();
+}
+function mountTool(id) {
+  const s = tl(id), d = TOOL_DEFS[id], w = $('tw-' + id), host = $('tab-' + id);
+  if (s.mode === 'float') {
+    const win = winEl(id); win.style.display = 'flex'; bringFront(win); clampWin(win);
+    if (host) host.innerHTML = '';
+    syncToolTabs(); if (curTab === id) setTab('inspector');
+  } else if (s.mode === 'tab') {
+    if (w) w.style.display = 'none';
+    host.innerHTML = `<div class="tw-dockbar"><b>${d.icon} ${d.title}</b><span class="flex-1"></span><button class="icon-btn" data-ta="float" title="Float as a window">⇱</button><button class="icon-btn" data-ta="close" title="Close">✕</button></div><div class="tw-body"></div>`;
+    if (!settings.showPanel) setUiKey('showPanel', true);
+    syncToolTabs(); setTab(id);
+  }
+  toolShell(id); toolLive(id);
+  if (id === 'heatmap') heatRefresh(true);
+  syncToolbar(); syncViewTools();
+}
+const IMPL = {};                                                 // id -> { shell(), live(box) }
+function toolShell(id) {
+  const box = toolHost(id); if (!box || !IMPL[id]) return;
+  box.innerHTML = `<div class="tb-shell">${IMPL[id].shell()}</div><div class="tb-live"></div>`;
+}
+function toolLive(id) {
+  const box = toolHost(id); if (!box || !IMPL[id] || !toolVisible(id)) return;
+  const live = box.querySelector('.tb-live'); if (!live) return;
+  try { IMPL[id].live(live); } catch (e) { live.innerHTML = `<div class="warn">This tool hit a problem: ${esc(e.message)}</div>`; console.error(e); }
+}
+const hasFocus = id => { const b = toolHost(id); return !!(b && b.contains(document.activeElement) && /^(input|select|textarea)$/i.test(document.activeElement.tagName)); };
+let toolsLast = 0, toolsHover = false;
+function toolsRefresh(full) {
+  if (document.hidden) return;
+  const now = performance.now(); if (!full && now - toolsLast < 350) return; toolsLast = now; toolsDirty = false;
+  for (const id of Object.keys(TOOL_DEFS)) {
+    if (tl(id).mode === 'off') continue;
+    if (full && !hasFocus(id)) toolShell(id);
+    if (!(IMPL[id].hold && IMPL[id].hold())) toolLive(id);
+  }
+  syncToolbar();
+}
+setInterval(() => { if (sim.active && (sim.running || toolsDirty)) toolsRefresh(false); if (sim.active) syncToolbar(); }, 500);
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-ta]'); if (!a) return;
+  const root = a.closest('[data-tool]'); if (!root) return;
+  const id = root.dataset.tool, act = a.dataset.ta;
+  if (act === 'toggle') { tl(id).mode === 'off' ? toolOpen(id) : toolClose(id); }
+  else if (act === 'open') toolOpen(id);
+  else if (act === 'close') toolClose(id);
+  else if (act === 'dock') toolOpen(id, 'tab');
+  else if (act === 'float') toolOpen(id, 'float');
+  else if (IMPL[id] && IMPL[id].click) IMPL[id].click(a, e);
+});
+document.addEventListener('input', e => { const f = e.target.closest('[data-tf]'); if (f && f.closest('[data-tool]') && IMPL[f.closest('[data-tool]').dataset.tool].input) IMPL[f.closest('[data-tool]').dataset.tool].input(f, e); });
+document.addEventListener('change', e => { const f = e.target.closest('[data-tf]'); if (f && f.closest('[data-tool]') && IMPL[f.closest('[data-tool]').dataset.tool].change) IMPL[f.closest('[data-tool]').dataset.tool].change(f, e); });
+
+function renderViewTools() {
+  $('viewMenuTools').innerHTML = Object.entries(TOOL_DEFS).map(([id, d]) => `<button class="btn small ${tl(id).mode !== 'off' ? 'active' : ''}" data-tool="${id}" data-ta="toggle">${d.icon} ${d.short}</button>`).join('');
+}
+function syncViewTools() { if ($('viewMenu').classList.contains('open')) renderViewTools(); }
+$('tbTools').innerHTML = Object.entries(TOOL_DEFS).map(([id, d]) => `<button class="btn small" data-tool="${id}" data-ta="toggle" title="${d.title}">${d.icon} <span class="lb">${d.short}</span></button>`).join('');
+$('vmReset').onclick = () => {
+  setUiKey('uiPreset', 'full');
+  for (const id of Object.keys(TOOL_DEFS)) { const s = tl(id); delete s.x; delete s.y; delete s.w; delete s.h; const w = $('tw-' + id); if (w) w.remove(); if (s.mode === 'float') mountTool(id); }
+  tlSave(); toast('Layout reset.', 'ok', 1800);
+};
+
+/* shared: top contributor to a currency's production (for Time to afford) */
+function topSource(c, base) {
+  let addTot = c.rate || 0, mul = 1; const adds = c.rate ? [{ id: '', title: 'Base rate', v: c.rate }] : [];
+  for (const n of Object.values(state.nodes)) {
+    if (n.type === 'rebirth' || disabledOn(n, 'effects').length) continue;
+    const isB = n.type === 'board', lvl = isB ? (boardUnlocked(n) ? boardState(n).level : 0) : (sim.levels[n.id] || 0);
+    if (isB ? !boardUnlocked(n) : !lvl) continue;
+    for (const e of n.effects) {
+      const p = parseEffect(e); if (!p) continue; const tc = findCurrency(p.target); if (!tc || tc.name !== c.name) continue;
+      let v; if (p.formula) { v = evalFormula(p.expr, nodeVars(base, n, lvl)); if (!Number.isFinite(v)) continue; } else v = p.kind === 'mul' ? Math.pow(p.value, lvl) : p.value * lvl;
+      if (p.kind === 'mul') mul *= v; else if (p.kind === 'add') { addTot += v; adds.push({ id: n.id, title: n.title, v }); }
+    }
+  }
+  if (!adds.length || !(addTot > 0)) return null;
+  const top = adds.reduce((a, b) => b.v > a.v ? b : a);
+  return { id: top.id, title: top.title, share: top.v / addTot, perSec: top.v * mul };
+}
+
+/* ---------- 11f-1. PROGRESSION TIMELINE ---------- */
+const TL_KINDS = { buy: 'purchased', unlock: 'unlocked', afford: 'affordable', reset: 'reset' };
+const tlo = () => opt('tl', { metric: 'balance', cur: '', scale: 'lin', ev: { buy: true, unlock: true, afford: true, reset: true }, focus: 'cur', curVisible: true });
+const CUR_COLOR = '#f5f5f5';
+const runColor = r => r === RUNS.cur ? CUR_COLOR : r.color;
+function tlRuns() {
+  const o = tlo(), out = RUNS.list.filter(r => r.visible);
+  if (RUNS.cur && o.curVisible && RUNS.cur.samples.length) out.push(RUNS.cur);
+  return out;
+}
+function tlSeries(r, o) {
+  if (o.metric === 'owned') return r.samples.map(s => [s.t, s.o]);
+  const ci = r.names.indexOf(o.cur); if (ci < 0) return [];
+  const k = o.metric === 'rate' ? 'r' : 'b';
+  return r.samples.map(s => [s.t, s[k][ci]]);
+}
+function valAt(ser, t) {                                          // last sample at or before t
+  let lo = 0, hi = ser.length - 1, ans = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (ser[m][0] <= t) { ans = m; lo = m + 1; } else hi = m - 1; }
+  return ans < 0 ? (ser.length ? ser[0][1] : 0) : ser[ans][1];
+}
+function niceNum(range, round) {
+  const exp = Math.floor(Math.log10(range)), f = range / Math.pow(10, exp);
+  const nf = round ? (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) : (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10);
+  return nf * Math.pow(10, exp);
+}
+function niceTicks(hi, n) {
+  if (!(hi > 0)) return [0, 1];
+  const step = niceNum(niceNum(hi, false) / (n - 1), true), out = [];
+  for (let v = 0; v < hi + step * 0.999; v += step) out.push(+v.toPrecision(12));
+  return out;
+}
+function timeTicks(maxT) {
+  const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 172800, 432000, 864000, 2592000];
+  const step = steps.find(s => maxT / s <= 7) || 2592000, out = [];
+  for (let t = 0; t <= maxT + 1e-9; t += step) out.push(t);
+  return out;
+}
+const tlEvOn = (o, k) => !!o.ev[k];
+function tlShell() {
+  const o = tlo(), names = state.currencies.map(c => c.name);
+  if (!o.cur || !names.includes(o.cur)) o.cur = names[0] || '';
+  const seg = (k, opts, v) => `<div class="seg">${opts.map(([val, t]) => `<button data-ta="tl" data-k="${k}" data-v="${val}" class="${v === val ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const evchk = (k, label) => `<label class="tl-chk"><input type="checkbox" data-tf="ev" data-k="${k}" ${o.ev[k] ? 'checked' : ''}><i class="tl-key tl-${k}"></i>${label}</label>`;
+  const all = [].concat(RUNS.list, RUNS.cur ? [RUNS.cur] : []);
+  const runRow = r => {
+    const cur = r === RUNS.cur, vis = cur ? o.curVisible : r.visible;
+    const meta = `${fmtClock(cur ? sim.time : r.end)} · ${r.bot === 'cheapest' ? 'auto-play' : 'manual'}`;
+    return `<div class="tl-run"><label class="tl-runname"><input type="checkbox" data-tf="runvis" data-id="${cur ? 'cur' : r.id}" ${vis ? 'checked' : ''}><i style="background:${runColor(r)}"></i><span class="truncate">${esc(runLabel(r))}</span></label>
+      <span class="hint">${meta}</span>${cur ? '' : `<button class="icon-btn" data-ta="runren" data-id="${r.id}" title="Rename">✎</button><button class="icon-btn" data-ta="rundel" data-id="${r.id}" title="Delete this run">✕</button>`}</div>`;
+  };
+  const focusOpts = all.map(r => `<option value="${r === RUNS.cur ? 'cur' : r.id}" ${o.focus === (r === RUNS.cur ? 'cur' : r.id) ? 'selected' : ''}>${esc(runLabel(r))}</option>`).join('');
+  return `<div class="tl-row">${seg('metric', [['balance', 'Balance'], ['rate', 'Production'], ['owned', 'Upgrades owned']], o.metric)}
+      ${o.metric === 'owned' ? '' : `<select class="inp tl-sel" data-tf="cur">${names.map(n => `<option ${n === o.cur ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>`}
+      ${seg('scale', [['lin', 'Linear'], ['log', 'Log']], o.scale)}</div>
+    <div class="tl-row tl-evrow">${evchk('buy', 'Purchased')}${evchk('unlock', 'Unlocked')}${evchk('afford', 'Affordable')}${evchk('reset', 'Resets')}
+      ${all.length ? `<span class="flex-1"></span><label class="hint">Events from <select class="inp tl-sel" data-tf="focus">${focusOpts}</select></label>` : ''}</div>
+    <div class="tl-runs">${all.length ? all.map(runRow).join('') : '<div class="hint">No runs yet. Press <b>Start</b> or <b>Run to end</b> in the toolbar. Every restart keeps the previous run here so you can compare them.</div>'}</div>
+    ${RUNS.list.length ? '<div class="tl-foot"><button class="btn small" data-ta="runclear">Clear saved runs</button></div>' : ''}`;
+}
+let TLG = null;                                                   // geometry of the last chart, for hover / click
+function tlLive(box) {
+  const o = tlo(), runs = tlRuns();
+  if (!runs.length) { box.innerHTML = ''; TLG = null; return; }
+  const W = Math.max(280, box.clientWidth - 4), H = Math.max(190, Math.min(300, Math.round(W * 0.42)));
+  const m = { l: o.metric === 'owned' ? 40 : 54, r: 14, t: 12, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b, log = o.scale === 'log' && o.metric !== 'owned';
+  const sers = runs.map(r => ({ r, s: tlSeries(r, o) }));
+  let maxT = 10, maxV = 0, minPos = Infinity;
+  for (const { r, s } of sers) { maxT = Math.max(maxT, r === RUNS.cur ? sim.time : r.end, s.length ? s[s.length - 1][0] : 0); for (const [, v] of s) { if (v > maxV) maxV = v; if (v > 0 && v < minPos) minPos = v; } }
+  const xt = t => m.l + t / maxT * iw;
+  let yv, yTicks;
+  if (log) {
+    if (!Number.isFinite(minPos)) { minPos = 1; maxV = 10; }
+    let lo = Math.floor(Math.log10(minPos)), hi = Math.ceil(Math.log10(Math.max(maxV, minPos * 10))); if (hi - lo < 1) hi = lo + 1;
+    const span = hi - lo, stride = Math.ceil(span / 6); yTicks = []; for (let d = lo; d <= hi; d += stride) yTicks.push(Math.pow(10, d));
+    yv = v => v > 0 ? m.t + ih - (Math.log10(v) - lo) / span * ih : null;
+  } else {
+    yTicks = niceTicks(maxV || 1, 5); const top = yTicks[yTicks.length - 1] || 1;
+    yv = v => m.t + ih - Math.min(v, top) / top * ih;
+  }
+  let g = '';
+  for (const v of yTicks) { const y = yv(v); if (y === null) continue; g += `<line class="tl-grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text class="tl-ax" x="${m.l - 6}" y="${y + 3.5}" text-anchor="end">${fmt(v)}</text>`; }
+  for (const t of timeTicks(maxT)) { const x = xt(t); g += `<line class="tl-grid" x1="${x}" x2="${x}" y1="${m.t}" y2="${m.t + ih}"/><text class="tl-ax" x="${x}" y="${H - 8}" text-anchor="middle">${fmtClock(t)}</text>`; }
+  let lines = '';
+  for (const { r, s } of sers) {
+    let d = '', pen = false;
+    for (const [t, v] of s) { const y = yv(v); if (y === null) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${xt(t).toFixed(1)} ${y.toFixed(1)}`; pen = true; }
+    const cur = r === RUNS.cur;
+    lines += `<path d="${d}" fill="none" stroke="${runColor(r)}" stroke-width="${cur ? 2.2 : 1.6}" stroke-linejoin="round" ${cur ? '' : 'opacity=".85"'}/>`;
+  }
+  const focus = o.focus === 'cur' ? RUNS.cur : runById(o.focus) || RUNS.cur || runs[runs.length - 1];
+  const fser = focus ? (sers.find(x => x.r === focus) || { s: tlSeries(focus, o) }).s : [];
+  const kinds = Object.keys(TL_KINDS).filter(k => tlEvOn(o, k)), evs = focus ? focus.events.filter(e => kinds.includes(e.k) && state.nodes[e.id]) : [];
+  let shown = evs; let crowd = false;
+  if (evs.length > 700) { shown = evs.filter(e => e.k === 'buy' || e.k === 'reset'); crowd = true; }
+  const mk = []; let marks = '';
+  for (const e of shown) {
+    const x = xt(Math.min(e.t, maxT)), v = valAt(fser, e.t), yy = yv(v), y = yy === null ? m.t + ih : yy;
+    if (e.k === 'reset') { marks += `<line x1="${x}" x2="${x}" y1="${m.t}" y2="${m.t + ih}" stroke="#f87171" stroke-width="1.2" stroke-dasharray="4 4" opacity=".75"/>`; mk.push({ x, y: m.t + 8, e }); continue; }
+    marks += e.k === 'buy' ? `<circle cx="${x}" cy="${y}" r="3.6" fill="#fafafa" stroke="#000" stroke-width="1"/>`
+      : e.k === 'unlock' ? `<circle cx="${x}" cy="${y}" r="3.2" fill="#000" stroke="#a78bfa" stroke-width="1.6"/>`
+      : `<path d="M${x} ${y - 4.2}L${x + 4.2} ${y}L${x} ${y + 4.2}L${x - 4.2} ${y}Z" fill="#fbbf24" stroke="#000" stroke-width=".8"/>`;
+    mk.push({ x, y, e });
+  }
+  TLG = { m, iw, ih, maxT, W, H, sers, mk, xt, yv };
+  const list = evs.slice(0, 400).map(e => { const n = state.nodes[e.id]; return `<button class="tl-ev" data-ta="goto" data-id="${esc(e.id)}"><span class="tl-t">${fmtClock(e.t)}</span><i class="tl-key tl-${e.k}"></i><span class="truncate">${e.k === 'reset' ? 'Reset · ' : ''}${esc(n.title)}${e.k === 'buy' && e.lv > 1 ? ` · Lv ${e.lv}` : ''}</span><span class="hint">${TL_KINDS[e.k]}</span></button>`; }).join('');
+  box.innerHTML = `<div class="tl-chart" id="tlChart"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Progression timeline">${g}${lines}${marks}<line id="tlCross" class="tl-cross" y1="${m.t}" y2="${m.t + ih}" x1="0" x2="0" style="display:none"/><rect id="tlHit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="tl-tip" id="tlTip" style="display:none"></div></div>
+    ${crowd ? '<div class="hint">Many events: unlock and affordable markers are hidden on the chart. They are still in the list below.</div>' : ''}
+    <div class="tl-listhead hint">${evs.length} event${evs.length === 1 ? '' : 's'}${focus ? ' · ' + esc(runLabel(focus)) : ''}${evs.length > 400 ? ' · first 400 shown' : ''} · click one to jump to its node</div>
+    <div class="tl-list">${list || '<div class="hint">Nothing to show. Turn on an event type above.</div>'}</div>`;
+}
+function tlHover(e) {
+  const c = $('tlChart'); if (!c || !TLG) return;
+  const hit = e.target.closest('#tlHit'), tip = $('tlTip'), cross = $('tlCross');
+  if (!hit) { if (tip) tip.style.display = 'none'; if (cross) cross.style.display = 'none'; toolsHover = false; return; }
+  toolsHover = true;
+  const r = c.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, G = TLG;
+  const t = Math.max(0, Math.min(G.maxT, (px - G.m.l) / G.iw * G.maxT));
+  let near = null, best = 11; for (const k of G.mk) { const d = Math.hypot(k.x - px, k.y - py); if (d < best) { best = d; near = k; } }
+  c.style.cursor = near ? 'pointer' : 'crosshair'; c.dataset.near = near ? near.e.id : '';
+  cross.style.display = ''; cross.setAttribute('x1', px); cross.setAttribute('x2', px);
+  const o = tlo(); let h = `<b>${fmtClock(t)}</b>`;
+  for (const { r: run, s } of G.sers) if (s.length && t <= Math.max(run === RUNS.cur ? sim.time : run.end, 0) + 1e-6) h += `<div><i style="background:${runColor(run)}"></i>${esc(runLabel(run))} <b>${fmt(valAt(s, t))}</b></div>`;
+  if (near) { const n = state.nodes[near.e.id]; h += `<div class="tl-tipev">${esc(n.id)} · ${esc(n.title)} <span class="hint">${TL_KINDS[near.e.k]} at ${fmtClock(near.e.t)}</span></div>`; }
+  tip.innerHTML = h; tip.style.display = 'block';
+  const tw = tip.offsetWidth; tip.style.left = Math.min(px + 14, c.clientWidth - tw - 4) + 'px'; tip.style.top = Math.max(4, py - 10) + 'px';
+}
+document.addEventListener('pointermove', e => { if (e.target.closest && e.target.closest('#tlChart')) tlHover(e); else if (toolsHover) tlHover(e); });
+document.addEventListener('click', e => { const c = e.target.closest('#tlChart'); if (c && e.target.closest('#tlHit') && c.dataset.near) goNode(c.dataset.near); });
+IMPL.timeline = {
+  shell: tlShell, live: tlLive, hold: () => toolsHover,
+  click(a) {
+    const o = tlo(), act = a.dataset.ta;
+    if (act === 'tl') { o[a.dataset.k] = a.dataset.v; toolShell('timeline'); toolLive('timeline'); }
+    else if (act === 'goto') goNode(a.dataset.id);
+    else if (act === 'rundel') { RUNS.list = RUNS.list.filter(r => r.id !== a.dataset.id); if (HEAT.src === a.dataset.id) HEAT.src = 'cur'; runsPersist(); toolsRefresh(true); heatRefresh(true); }
+    else if (act === 'runren') { const r = runById(a.dataset.id), nm = r && prompt('Name this run:', r.name); if (nm && nm.trim()) { r.name = nm.trim().slice(0, 40); runsPersist(); toolsRefresh(true); } }
+    else if (act === 'runclear') { RUNS.list = []; HEAT.src = 'cur'; runsPersist(); toolsRefresh(true); heatRefresh(true); }
+  },
+  change(f) {
+    const o = tlo();
+    if (f.dataset.tf === 'ev') o.ev[f.dataset.k] = f.checked;
+    else if (f.dataset.tf === 'cur') o.cur = f.value;
+    else if (f.dataset.tf === 'focus') o.focus = f.value;
+    else if (f.dataset.tf === 'runvis') { if (f.dataset.id === 'cur') o.curVisible = f.checked; else { const r = runById(f.dataset.id); if (r) { r.visible = f.checked; runsPersist(); } } }
+    tlSave(); toolLive('timeline');
+  },
+};
+
+/* ---------- 11f-2. TIME TO AFFORD ---------- */
+const afo = () => opt('af', { filter: 'avail' });
+function affordShell() {
+  const o = afo();
+  return `<div class="seg">${[['avail', 'Available'], ['locked', 'Locked'], ['all', 'All']].map(([v, t]) => `<button data-ta="aff" data-v="${v}" class="${o.filter === v ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+}
+function affordLive(box) {
+  if (!sim.active) { box.innerHTML = `<div class="log-empty"><b>No run in progress</b>Start a test run to see how long each upgrade will take.<br><button class="btn small primary mt-2" data-ta="affstart">▶ Start test run</button></div>`; return; }
+  const o = afo(), base = baseVars(), cache = {}, rows = [];
+  const top = name => name in cache ? cache[name] : (cache[name] = (c => c ? topSource(c, base) : null)(findCurrency(name)));
+  for (const n of Object.values(state.nodes)) {
+    if (!waitsFor(n)) continue;
+    const s = liteStatus(n); if (!s.avail && s.owned) continue;                    // owned / maxed
+    const locked = !s.avail, e = etaFor(costsAt(n, n.type === 'rebirth' ? 0 : s.level));
+    const miss = locked ? n.parents.filter(p => !isOwnedId(p)) : [];
+    rows.push({ n, s, e, locked, miss, ready: s.afford });
+  }
+  const sel = rows.filter(r => o.filter === 'all' || (o.filter === 'locked' ? r.locked : !r.locked));
+  sel.sort((a, b) => (a.locked - b.locked) || ((a.ready ? 0 : 1) - (b.ready ? 0 : 1)) || (a.e.eta - b.e.eta) || natCmp(a.n.id, b.n.id));
+  const nx = rows.filter(r => !r.locked && !r.ready).sort((a, b) => a.e.eta - b.e.eta)[0], rd = rows.filter(r => r.ready && !r.locked);
+  const head = rd.length && !nx ? `<div class="af-head"><div class="af-big ok">Ready to buy</div><div class="hint">${rd.map(r => esc(r.n.title)).slice(0, 4).join(', ')}</div></div>`
+    : nx ? `<div class="af-head"><div class="af-big">Next upgrade: ${fmtEta(nx.e.eta)}${nx.e.eta === Infinity ? '' : ' remaining'}</div><div class="hint">${esc(nx.n.id)} · ${esc(nx.n.title)}${rd.length ? ` · ${rd.length} more ready to buy now` : ''}</div></div>`
+    : `<div class="af-head"><div class="af-big">Nothing waiting</div><div class="hint">Every available upgrade is owned.</div></div>`;
+  const html = sel.slice(0, 80).map(r => {
+    const bw = r.e.worst, pct = r.e.lines.length ? Math.min(...r.e.lines.map(l => l.need > 0 ? clamp(l.bal / l.need, 0, 1) : 1)) * 100 : 100;
+    const lines = r.e.lines.map(l => {
+      const ts = top(l.name), src = l.t === 0 ? '' : ts ? ` · top source <b>${esc(ts.id ? ts.id + ' ' + ts.title : ts.title)}</b> (${Math.round(ts.share * 100)}%)` : l.rate > 0 ? '' : ' · nothing produces it yet';
+      return `<div class="af-line${bw === l && r.e.lines.length > 1 && l.t > 0 ? ' worst' : ''}"><span>${esc(l.name)} <b>${fmt(l.bal)}</b> / ${fmt(l.need)}</span><span class="af-rate">${l.rate >= 0 ? '+' : ''}${fmt(l.rate)}/s${l.t > 0 ? ' · ' + fmtEta(l.t) : ''}</span>${src ? `<span class="af-src">${src.slice(3)}</span>` : ''}</div>`;
+    }).join('') || '<div class="af-line"><span>Free</span></div>';
+    const lockNote = r.locked ? `<div class="af-lock">${r.miss.length ? 'Locked · needs ' + esc(r.miss.slice(0, 4).join(', ')) + (r.miss.length > 4 ? '…' : '') + (r.n.requires === 'any' && r.n.parents.length > 1 ? ' (any one)' : '') : 'Blocked by another upgrade'}</div>` : '';
+    const kind = r.n.type === 'repeatable' && r.s.level > 0 ? ` · Lv ${r.s.level + 1}` : r.n.type === 'rebirth' ? ' · requirement' : '';
+    return `<div class="af-row${r.locked ? ' locked' : ''}" data-ta="goto" data-id="${esc(r.n.id)}" role="button" tabindex="0">
+      <div class="af-top"><span class="af-name truncate">${esc(r.n.id)} · ${esc(r.n.title)}<span class="hint">${kind}</span></span><span class="af-eta${r.ready ? ' ok' : ''}${r.e.eta === Infinity ? ' bad' : ''}">${r.ready ? 'ready' : fmtEta(r.e.eta)}</span></div>
+      <div class="af-bar"><i style="width:${pct.toFixed(1)}%"></i></div>${lines}${lockNote}</div>`;
+  }).join('');
+  box.innerHTML = head + (html || `<div class="hint">No ${o.filter === 'locked' ? 'locked' : o.filter === 'avail' ? 'available' : ''} upgrades to estimate.</div>`)
+    + `<div class="hint af-foot">Estimates assume production stays at its current rate. Locked upgrades show the time to afford their own cost, not the time to unlock them.</div>`;
+}
+IMPL.afford = {
+  shell: affordShell, live: affordLive,
+  click(a) {
+    if (a.dataset.ta === 'aff') { afo().filter = a.dataset.v; tlSave(); toolShell('afford'); toolLive('afford'); }
+    else if (a.dataset.ta === 'goto') goNode(a.dataset.id);
+    else if (a.dataset.ta === 'affstart') startSim();
+  },
+};
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.af-row')) { e.preventDefault(); goNode(e.target.dataset.id); } });
+
+/* ---------- 11f-3. UPGRADE BOTTLENECK HEATMAP ---------- */
+const heo = () => opt('he', { canvas: true, mode: 'share', yShare: 4, rShare: 12, ySec: 60, rSec: 300 });
+const HEAT_NAMES = { g: 'Quick', y: 'Moderate wait', r: 'Bottleneck', p: 'Never reached', u: 'Restored from a save' };
+function heatRun() { return runById(HEAT.src) || RUNS.cur || RUNS.list[RUNS.list.length - 1] || null; }
+function heatCompute() {
+  const R = heatRun(), o = heo();
+  if (!R) { HEAT.map = null; HEAT.stats = null; return; }
+  const live = R === RUNS.cur, span = Math.max(live ? Math.max(R.lastReach, 1) : Math.max(R.lastReach, R.end * 0), 1);
+  const yS = o.mode === 'share' ? Math.max(3, span * o.yShare / 100) : o.ySec, rS = o.mode === 'share' ? Math.max(8, span * o.rShare / 100) : o.rSec;
+  const map = {}, waits = []; let never = 0, slow = null;
+  for (const n of Object.values(state.nodes)) {
+    const f = R.first[n.id] || {};
+    if (R.unknown[n.id]) { map[n.id] = { cls: 'u', label: '?', wait: null }; continue; }
+    if (f.b === undefined) { map[n.id] = { cls: 'p', label: '—', wait: null, avail: f.a }; never++; continue; }
+    const w = Math.max(0, f.b - (f.a === undefined ? f.b : f.a)), cls = w >= rS ? 'r' : w >= yS ? 'y' : 'g';
+    map[n.id] = { cls, label: fmtClock(w), wait: w, avail: f.a, buy: f.b }; waits.push(w);
+    if (!slow || w > slow.w) slow = { id: n.id, w };
+  }
+  waits.sort((a, b) => a - b);
+  HEAT.map = map; HEAT.thr = { yS, rS }; HEAT.span = span;
+  HEAT.stats = { slow, median: waits.length ? waits[Math.floor(waits.length / 2)] : null, never, total: Object.keys(state.nodes).length, reached: waits.length };
+}
+let heatSig = '';
+function heatRefresh(force) {
+  const on = tl('heatmap').mode !== 'off' && heo().canvas;
+  const was = HEAT.on; HEAT.on = on; viewport.classList.toggle('heat-on', on);
+  if (!on) { if (was) { HEAT.map = null; Object.values(state.nodes).forEach(n => updateNodeEl(n, true)); } heatSig = ''; return; }
+  heatCompute(); const sig = JSON.stringify(HEAT.map);
+  if (force || sig !== heatSig) { heatSig = sig; Object.values(state.nodes).forEach(n => updateNodeEl(n, force === true)); }
+}
+const heatSigOf = n => HEAT.on && HEAT.map && HEAT.map[n.id] ? HEAT.map[n.id].cls + HEAT.map[n.id].label : '';
+const heatChip = n => HEAT.on && HEAT.map && HEAT.map[n.id] ? `<span class="n-heat">${esc(HEAT.map[n.id].label)}</span>` : '';
+function tierMap() {
+  const memo = {};
+  const d = id => { if (id in memo) return memo[id]; memo[id] = 0; const n = state.nodes[id]; let m = 0; if (n) for (const p of n.parents) if (state.nodes[p]) m = Math.max(m, d(p) + 1); return memo[id] = m; };
+  Object.keys(state.nodes).forEach(d); return memo;
+}
+function heatShell() {
+  const o = heo(), all = [].concat(RUNS.list, RUNS.cur ? [RUNS.cur] : []), cur = heatRun();
+  const opts = all.map(r => { const id = r === RUNS.cur ? 'cur' : r.id; return `<option value="${id}" ${cur === r ? 'selected' : ''}>${esc(runLabel(r))}</option>`; }).join('');
+  return `<div class="hm-top"><select class="inp hm-pill" data-tf="src" ${all.length ? '' : 'disabled'}>${opts || '<option>No runs yet</option>'}</select><span class="flex-1"></span>
+      <label class="hint hm-canvas"><input type="checkbox" data-tf="canvas" ${o.canvas ? 'checked' : ''}> Colour nodes on canvas</label>
+      <button class="hm-dots" data-ta="hmcfg" title="Colour thresholds" aria-label="Thresholds">⋮</button></div>
+    <div class="hm-cfg" id="hmCfg" style="display:none">
+      <div class="seg">${[['share', 'Share of run'], ['secs', 'Fixed seconds']].map(([v, t]) => `<button data-ta="hmmode" data-v="${v}" class="${o.mode === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+      ${o.mode === 'share' ? `<div class="row"><label class="hint">Yellow from</label><input class="inp hm-num" data-tf="yShare" value="${o.yShare}"><label class="hint">% of the run, red from</label><input class="inp hm-num" data-tf="rShare" value="${o.rShare}"><span class="hint">%</span></div>`
+        : `<div class="row"><label class="hint">Yellow from</label><input class="inp hm-num" data-tf="ySec" value="${o.ySec}"><label class="hint">s, red from</label><input class="inp hm-num" data-tf="rSec" value="${o.rSec}"><span class="hint">s</span></div>`}
+      <div class="hint">A wait is the time between an upgrade becoming available and being bought.</div></div>`;
+}
+function heatLive(box) {
+  if (!RUNS.cur && !RUNS.list.length) { box.innerHTML = `<div class="log-empty"><b>No run to analyse</b>Simulate a full playthrough and the upgrades will be coloured by how long the player waits for each one.<br><button class="btn small primary mt-2" data-ta="hmrun">⏩ Simulate full run</button></div>`; return; }
+  heatCompute(); const M = HEAT.map, S = HEAT.stats, R = heatRun(); if (!M || !S) return;
+  const tiers = tierMap(), cols = []; Object.values(state.nodes).forEach(n => { (cols[tiers[n.id]] = cols[tiers[n.id]] || []).push(n); });
+  const rows = Math.max(1, ...cols.map(c => c ? c.length : 0));
+  cols.forEach(c => c && c.sort((a, b) => a.y - b.y || a.x - b.x));
+  let grid = '';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols.length; c++) { const n = cols[c] && cols[c][r]; grid += n ? `<button class="hm-cell hm-${M[n.id].cls}" data-ta="goto" data-id="${esc(n.id)}" data-tip="${esc(n.id + ' · ' + n.title)}|${M[n.id].cls === 'p' ? 'never reached' + (M[n.id].avail !== undefined ? ' (available from ' + fmtClock(M[n.id].avail) + ')' : '') : M[n.id].cls === 'u' ? 'restored from a save' : 'waited ' + M[n.id].label}" aria-label="${esc(n.title)}"></button>` : '<span class="hm-gap"></span>'; }
+  const labels = cols.map((_, i) => `<span>T${i + 1}</span>`).join('');
+  const sl = S.slow, shareOf = w => HEAT.span > 0 ? Math.round(w / HEAT.span * 100) : 0;
+  const nm = id => state.nodes[id] ? state.nodes[id].title : id;
+  box.innerHTML = `<div class="hm-grid" id="hmGrid" style="grid-template-columns:repeat(${cols.length},minmax(26px,1fr))">${grid}</div>
+    <div class="hm-labels" style="grid-template-columns:repeat(${cols.length},minmax(26px,1fr))">${labels}</div>
+    <div class="hm-legend"><span class="hint">Quick</span><i class="hm-g"></i><i class="hm-y"></i><i class="hm-r"></i><span class="hint">Bottleneck</span><span class="hm-sep"></span><i class="hm-p"></i><span class="hint">Never reached</span></div>
+    <div class="hm-stats">
+      <div><div class="hint">Slowest wait</div><div class="hm-val">${sl ? fmtClock(sl.w) : '—'}</div>${sl ? `<div class="hm-badge ${shareOf(sl.w) >= heo().rShare && heo().mode === 'share' ? 'bad' : ''}" title="${esc(nm(sl.id))}">${esc(sl.id)} · ${shareOf(sl.w)}% of run</div>` : ''}</div>
+      <div><div class="hint">Median wait</div><div class="hm-val">${S.median === null ? '—' : fmtClock(S.median)}</div><div class="hm-badge">${S.reached} reached</div></div>
+      <div><div class="hint">Never reached</div><div class="hm-val">${S.never}<span class="hint"> of ${S.total}</span></div><div class="hm-badge ${S.never ? 'purple' : ''}">${R === RUNS.cur ? 'so far' : 'in this run'}</div></div>
+    </div><div class="hm-tip" id="hmTip" style="display:none"></div>`;
+}
+document.addEventListener('pointermove', e => {
+  const tip = $('hmTip'); if (!tip) return;
+  const c = e.target.closest && e.target.closest('.hm-cell');
+  if (!c) { tip.style.display = 'none'; toolsHover = false; return; }
+  toolsHover = true; const [a, b] = c.dataset.tip.split('|'), live = tip.parentElement.getBoundingClientRect(), r = c.getBoundingClientRect();
+  tip.innerHTML = `<b>${a}</b><br>${b}`; tip.style.display = 'block';
+  tip.style.left = Math.max(4, Math.min(live.width - tip.offsetWidth - 4, r.left - live.left + r.width / 2 - tip.offsetWidth / 2)) + 'px'; tip.style.top = (r.top - live.top - tip.offsetHeight - 8) + 'px';
+});
+IMPL.heatmap = {
+  shell: heatShell, live: heatLive, hold: () => toolsHover,
+  click(a) {
+    const o = heo(), act = a.dataset.ta;
+    if (act === 'goto') goNode(a.dataset.id);
+    else if (act === 'hmcfg') { const c = $('hmCfg'); c.style.display = c.style.display === 'none' ? '' : 'none'; }
+    else if (act === 'hmmode') { o.mode = a.dataset.v; tlSave(); toolShell('heatmap'); $('hmCfg').style.display = ''; heatRefresh(true); toolLive('heatmap'); }
+    else if (act === 'hmrun') runToEnd();
+  },
+  change(f) {
+    const o = heo(), k = f.dataset.tf;
+    if (k === 'src') HEAT.src = f.value;
+    else if (k === 'canvas') o.canvas = f.checked;
+    else if (['yShare', 'rShare', 'ySec', 'rSec'].includes(k)) { const v = parseFloat(f.value); if (v > 0) o[k] = v; }
+    tlSave(); heatRefresh(true); toolLive('heatmap');
+  },
+};
+
+/* ---------- 11f-4. MILESTONE TIMING REPORT ---------- */
+const MS = {
+  _pid: null, _cfg: null,
+  cfg() { const pid = pidNow(); if (this._pid !== pid) { this._pid = pid; this._cfg = lsGet('arbor.milestones.v1.' + pid, { pins: [], custom: [] }); this._cfg.pins = this._cfg.pins || []; this._cfg.custom = this._cfg.custom || []; } return this._cfg; },
+  save() { lsSet('arbor.milestones.v1.' + pidNow(), this._cfg); },
+};
+const msO = () => opt('ms', { run: 'cur', cmp: '' });
+const ORD = ['', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
+function msList(R) {
+  const out = [], first = id => R.first[id] && !R.unknown[id] ? R.first[id].b : undefined;
+  const nodes = Object.values(state.nodes), cfg = MS.cfg();
+  const firstOf = pred => { let best; for (const n of nodes) if (pred(n)) { const t = first(n.id); if (t !== undefined && (best === undefined || t < best.t)) best = { t, id: n.id }; } return best; };
+  const add = (key, name, hit, note) => out.push({ key, name, t: hit ? hit.t : undefined, id: hit ? hit.id : undefined, note: note || '' });
+  const bought = R.events.find(e => e.k === 'buy');
+  add('first', 'First upgrade', bought ? { t: bought.t, id: bought.id } : undefined);
+  if (nodes.some(n => n.type === 'auto' || n.type === 'autoperm')) add('auto', 'First automation', firstOf(n => n.type === 'auto' || n.type === 'autoperm'));
+  const reset = R.events.find(e => e.k === 'reset');
+  if (nodes.some(n => n.type === 'rebirth')) add('reset', 'First reset', reset ? { t: reset.t, id: reset.id } : undefined);
+  const cur = Object.entries(R.curFirst).sort((a, b) => a[1] - b[1]);
+  state.currencies.slice(1).forEach((c, i) => { const idx = cur.findIndex(x => x[0] === c.name); add('cur:' + c.name, `${ORD[idx + 1] || (idx + 2) + 'th'} currency`, idx >= 0 ? { t: cur[idx][1] } : undefined, c.name); });
+  for (const [type, label] of [['repeatable', 'First repeatable'], ['unlock', 'First permanent unlock'], ['milestone', 'First milestone'], ['board', 'First board'], ['achievement', 'First achievement']])
+    if (nodes.some(n => n.type === type)) add('type:' + type, label, firstOf(n => n.type === type));
+  [...new Set(nodes.map(n => n.tag).filter(Boolean))].forEach(tag => add('tag:' + tag, `First #${tag}`, firstOf(n => n.tag === tag)));
+  cfg.pins.filter(id => state.nodes[id]).forEach(id => { const t = first(id); add('pin:' + id, '★ ' + state.nodes[id].title, t === undefined ? undefined : { t, id }, id); });
+  cfg.custom.forEach(m => { const t = R.custom[m.id]; add('cus:' + m.id, m.name, t === undefined ? undefined : { t }, m.f); });
+  const leaves = nodes.filter(n => n.type !== 'achievement' && n.type !== 'challenge' && !nodes.some(o => o.parents.includes(n.id)));
+  if (leaves.length) {
+    const ts = leaves.map(n => ({ n, t: first(n.id) })), missing = ts.filter(x => x.t === undefined);
+    if (missing.length) add('final', 'Final node', undefined, `${missing.length} of ${leaves.length} not reached`);
+    else { const l = ts.reduce((a, b) => b.t > a.t ? b : a); add('final', 'Final node', { t: l.t, id: l.n.id }); }
+  }
+  const real = nodes.filter(n => n.type !== 'challenge'), reached = real.filter(n => first(n.id) !== undefined);
+  if (real.length > 1) add('all', 'Every upgrade', reached.length === real.length ? { t: Math.max(...reached.map(n => first(n.id))) } : undefined, reached.length === real.length ? '' : `${real.length - reached.length} not reached`);
+  return out.sort((a, b) => (a.t === undefined) - (b.t === undefined) || a.t - b.t);
+}
+function msShell() {
+  const o = msO(), all = [].concat(RUNS.list, RUNS.cur ? [RUNS.cur] : []), cfg = MS.cfg();
+  const ro = (cur) => all.map(r => { const id = r === RUNS.cur ? 'cur' : r.id; return `<option value="${id}" ${cur === id ? 'selected' : ''}>${esc(runLabel(r))}</option>`; }).join('');
+  const pinnable = Object.values(state.nodes).filter(n => !cfg.pins.includes(n.id)).sort((a, b) => natCmp(a.id, b.id));
+  return `<div class="row"><select class="inp" data-tf="run" ${all.length ? '' : 'disabled'}>${ro(o.run) || '<option>No runs yet</option>'}</select>
+      <select class="inp" data-tf="cmp" title="Compare against another run"><option value="">No comparison</option>${ro(o.cmp)}</select><button class="btn small" data-ta="mscopy" title="Copy as a table">Copy</button></div>
+    <details class="ms-add"><summary>Add milestones</summary>
+      <div class="row"><select class="inp" data-tf="pin"><option value="">Pin an upgrade…</option>${pinnable.map(n => `<option value="${esc(n.id)}">${esc(n.id)} · ${esc(n.title)}</option>`).join('')}</select></div>
+      <div class="row"><input class="inp" data-tf="cname" placeholder="Name, e.g. 1M points" style="flex:1"><input class="inp font-mono" data-tf="cform" placeholder="points >= 1e6" style="flex:1.3"><button class="btn small" data-ta="msadd">Add</button></div>
+      <div class="hint" id="msMsg">A formula milestone is reached the first time its condition is true. It can use currencies, upgrade levels and <code>time</code>. New ones are tracked from the next run.</div></details>`;
+}
+function msLive(box) {
+  const o = msO(), R = runById(o.run) || RUNS.cur || RUNS.list[RUNS.list.length - 1];
+  if (!R) { box.innerHTML = `<div class="log-empty"><b>No run yet</b>Milestones are detected from a simulated run.<br><button class="btn small primary mt-2" data-ta="msrun">⏩ Simulate full run</button></div>`; return; }
+  const B = o.cmp ? runById(o.cmp) : null, base = B && B !== R ? Object.fromEntries(msList(B).map(m => [m.key, m.t])) : null, list = msList(R), cfg = MS.cfg();
+  let prev = 0;
+  const rows = list.map(m => {
+    const dlt = m.t !== undefined && m.t - prev > 0 ? `+${fmtClock(m.t - prev)}` : ''; if (m.t !== undefined) prev = m.t;
+    let cmp = ''; if (base) { const b = base[m.key]; cmp = m.t === undefined || b === undefined ? '<span class="hint">—</span>' : `<span class="${m.t <= b ? 'ok' : 'bad'}">${m.t <= b ? '−' : '+'}${fmtClock(Math.abs(m.t - b))}</span>`; }
+    const rm = m.key.startsWith('pin:') ? `<button class="icon-btn" data-ta="mspin" data-id="${esc(m.key.slice(4))}" title="Unpin">✕</button>` : m.key.startsWith('cus:') ? `<button class="icon-btn" data-ta="msdel" data-id="${esc(m.key.slice(4))}" title="Remove">✕</button>` : '';
+    return `<tr class="${m.t === undefined ? 'miss' : ''}${m.id ? ' go' : ''}" ${m.id ? `data-ta="goto" data-id="${esc(m.id)}"` : ''}><td>${esc(m.name)}${m.note ? `<div class="hint">${esc(m.note)}</div>` : ''}</td><td class="ms-t">${m.t === undefined ? 'not reached' : fmtClock(m.t)}</td><td class="hint">${dlt}</td>${base ? `<td class="ms-t">${cmp}</td>` : ''}<td>${rm}</td></tr>`;
+  }).join('');
+  box.innerHTML = `<table class="ms-table"><thead><tr><th>Milestone</th><th>Time reached</th><th>Since last</th>${base ? `<th>vs ${esc(runLabel(B))}</th>` : ''}<th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="hint">${esc(runLabel(R))} · ${fmtClock(R === RUNS.cur ? sim.time : R.end)} simulated · ${R.bot === 'cheapest' ? 'auto-play, cheapest first' : 'manual play'}${Object.keys(R.unknown).length ? ' · loaded from a save, earlier history is unknown' : ''}</div>`;
+}
+IMPL.milestones = {
+  shell: msShell, live: msLive,
+  click(a) {
+    const act = a.dataset.ta, cfg = MS.cfg();
+    if (act === 'goto') goNode(a.dataset.id);
+    else if (act === 'msrun') runToEnd();
+    else if (act === 'mspin') { cfg.pins = cfg.pins.filter(x => x !== a.dataset.id); MS.save(); toolShell('milestones'); toolLive('milestones'); }
+    else if (act === 'msdel') { cfg.custom = cfg.custom.filter(x => x.id !== a.dataset.id); MS.save(); toolShell('milestones'); toolLive('milestones'); }
+    else if (act === 'msadd') {
+      const host = toolHost('milestones'), nm = host.querySelector('[data-tf="cname"]').value.trim(), f = host.querySelector('[data-tf="cform"]').value.trim(), msg = $('msMsg');
+      const err = !nm ? 'Give the milestone a name.' : !f ? 'Enter a condition.' : formulaError(f);
+      if (err) { msg.textContent = err; msg.classList.add('warn'); return; }
+      cfg.custom.push({ id: 'm' + Date.now().toString(36), name: nm, f }); MS.save(); toolShell('milestones'); toolLive('milestones');
+      toast('Added. It is tracked from the next run.', 'ok', 2500);
+    }
+    else if (act === 'mscopy') {
+      const o = msO(), R = runById(o.run) || RUNS.cur || RUNS.list[RUNS.list.length - 1]; if (!R) return;
+      const text = 'Milestone\tTime reached\n' + msList(R).map(m => `${m.name}\t${m.t === undefined ? 'not reached' : fmtClock(m.t)}`).join('\n');
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Milestone table copied.', 'ok', 1800), () => { prompt('Copy the table:', text); });
+    }
+  },
+  change(f) {
+    const o = msO(), k = f.dataset.tf, cfg = MS.cfg();
+    if (k === 'run') o.run = f.value; else if (k === 'cmp') o.cmp = f.value;
+    else if (k === 'pin') { if (f.value) { cfg.pins.push(f.value); MS.save(); toolShell('milestones'); } }
+    tlSave(); toolLive('milestones');
+  },
+};
+
+/* ---------- boot for the new UI ---------- */
+function uiBoot() {
+  applyUi();
+  for (const id of Object.keys(TOOL_DEFS)) { const m = tl(id).mode; if (m !== 'off') mountTool(id); }
+  syncToolbar();
+}
+
 /* ----- Boot ----- */
 (function init() {
   if (!loadSaved()) { const t = parseTree(EXAMPLE); state.nodes = t.nodes; state.currencies = t.currencies; state.globals = t.globals || []; state.vfx = t.vfx || []; }
-  fullRender(); fitView(); renderProjectChip(); runValidation();
+  uiBoot(); fullRender(); fitView(); renderProjectChip(); runValidation();
 })();
 $('tab-settings').addEventListener('change', e => {
   const k = e.target.dataset.set; if (!k) return;
